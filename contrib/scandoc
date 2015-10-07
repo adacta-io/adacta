@@ -1,0 +1,61 @@
+# /bin/bash
+
+# Config
+TARGET="/home/fooker/docs/scan"
+
+# Generate a document ID
+DID="$(uuidgen)"
+
+# Generate the target document directory
+mkdir "${TARGET}/${DID}"
+
+# Redirect all output to the log file
+exec &> "${TARGET}/${DID}/scan.log"
+
+# Change working directory to document dir
+pushd "${TARGET}/${DID}"
+
+# Scan the document
+scanadf \
+	--verbose \
+	--output-file 'scan-%03d.ppm' \
+	--resolution 300 \
+	--mode '24bit Color' \
+	--source 'Automatic Document Feeder(left aligned,Duplex)'
+
+# Enhance the pages for OCR
+unpaper \
+	'scan-%03d.ppm' \
+	'enhanced-%03d.ppm'
+
+# OCR each page
+for ((I=1; 1; I++)); do
+	SOURCE="$(printf 'enhanced-%03d.ppm' "${I}")"
+	TARGET="$(printf 'ocr-%03d' "${I}")"
+
+	# Break on first non-existing file
+	if [[ ! -e "${SOURCE}" ]]; then
+		break
+	fi
+
+	# OCR the page
+	tesseract \
+		"${SOURCE}" \
+		"${TARGET}" \
+		-l deu \
+		pdf
+done
+
+# Combine per page pdf files to a single one
+pdfunite \
+	ocr-???.pdf \
+	final.pdf
+
+# Extract the text of the final pdf file
+pdftotext final.pdf
+
+# Restore working directory
+popd
+
+# Exit gracefully
+exit 0

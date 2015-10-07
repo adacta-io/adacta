@@ -1,0 +1,114 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.5/superhero/bootstrap.min.css">
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <style>
+        body, html {
+            height: 100%;
+        }
+
+        .sidebar {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 250px;
+            padding: 0;
+            list-style: none;
+        }
+
+        .sidebar-header img {
+            width: auto;
+            height: auto;
+            display: block;
+            max-width: 100%;
+            padding: 5px;
+        }
+
+        .sidebar hr {
+            margin: 5px;
+            border-width: 2px;
+        }
+
+        .sidebar ul.sidebar-nav>li>a {
+            color: #fff;
+        }
+
+        .sidebar ul.sidebar-nav>li>a:hover,
+        .sidebar ul.sidebar-nav>li>a:active {
+            background-color:#39444e;
+        }
+
+        .sidebar ul.sidebar-nav>li>a:active:hover {
+            background-color: #2a323a;
+        }
+
+        .content {
+            margin-left: 250px;
+        }
+    </style>
+
+    <title>adacta</title>
+</head>
+<body>
+<nav class="sidebar navbar-default" role="navigation">
+    <div class="sidebar-header">
+        <img src="img/logo.png">
+        <hr>
+    </div>
+    <div class="" id="sidebar-collapse">
+        <ul class="nav sidebar-nav">
+            <li class="active">
+                <a href="#">
+                    <span class="pull-left hidden-xs showopacity glyphicon glyphicon-inbox"></span>
+                    Inbox
+                </a>
+            </li>
+        </ul>
+        <hr>
+        <ul class="nav sidebar-nav">
+            <li>
+                <div class="input-group">
+                    <input type="text"
+                           class="form-control"
+                           placeholder="Search"/>
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="button">
+                            <span class="glyphicon glyphicon-search"></span>
+                        </button>
+                    </span>
+                </div>
+            </li>
+            <li>
+                <a class="input-group" href="#">
+                    <span class="pull-right hidden-xs showopacity glyphicon glyphicon-tags"></span>
+                    Tags
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a href="#"><span class="badge pull-right">4</span>Amazon</a></li>
+                    <li><a href="#">Rechnung<span class="badge pull-right">4</span></a></li>
+                    <li><a href="#">Sparkasse<span class="badge pull-right">4</span></a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="content">
+    <div class="row">
+        <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et
+            dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
+            clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet,
+            consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat,
+            sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no
+            sea takimata sanctus est Lorem ipsum dolor sit amet.</p>
+    </div>
+</div>
+</body>
+</html>
