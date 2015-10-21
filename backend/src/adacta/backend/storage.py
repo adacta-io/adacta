@@ -1,11 +1,76 @@
 from require import *
 
+import json
 import uuid
 import shutil
 import pathlib
 import datetime
 
-from adacta.backend.manifest import Manifest
+from jsonobject import JsonObject
+from jsonobject.properties import (DictProperty,
+                                   JsonProperty,
+                                   DateTimeProperty,
+                                   SetProperty,
+                                   StringProperty)
+
+
+
+class UUIDProperty(JsonProperty):
+    def wrap(self, obj):
+        assert isinstance(obj, str)
+        return uuid.UUID(obj)
+
+
+    def unwrap(self, obj):
+        assert isinstance(obj, uuid.UUID)
+        return obj, str(obj)
+
+
+
+class Manifest(JsonObject):
+    did = UUIDProperty(default=uuid.uuid4)
+    """ The document ID.
+    """
+
+    uploaded = DateTimeProperty(default=datetime.datetime.now)
+    """ The point in time, when the document was uploaded.
+    """
+
+    reviewed = DateTimeProperty(default=None)
+    """ The point in time, when the document was last reviewed.
+    """
+
+    tags = SetProperty(StringProperty,
+                       default=set)
+    """ A set of tags assigned to the document
+    """
+
+    properties = DictProperty(StringProperty,
+                              default=dict)
+    """ Arbitrary properties assigned to the document
+    """
+
+
+    def save(self, path):
+        """ Saves the manifest to the given path
+            :param path: the path to save the manifest to
+        """
+
+        # Serialize the manifest directly to the file
+        with path.open(mode='w') as f:
+            json.dump(self.to_json(), f)
+
+
+    @staticmethod
+    def load(path):
+        """ Loads a manifest from the given path
+            :param path: the path to load the manifest from
+            :return: the loaded manifest
+        """
+
+        # Deserialize the manifest from the file
+        with path.open(mode='r') as f:
+            return Manifest(json.load(f))
 
 
 
@@ -72,17 +137,14 @@ class Bundle(object):
     @classmethod
     def create(cls,
                storage,
-               manifest,
-               fragments):
-        # Fill missing values in manifest
-        manifest.setdefault('did', uuid.uuid4())
-        manifest.setdefault('uploaded', datetime.datetime.now())
+               fragments,
+               did=Ellipsis):
 
-        # Build the manifest
-        manifest = Manifest(manifest)
+        if did is Ellipsis:
+            did = uuid.uuid4()
 
         # Build the path
-        path = storage.path / str(manifest.did)
+        path = storage.path / str(did)
 
         # Create the bundle directory
         path.mkdir(parents=True)
@@ -92,12 +154,29 @@ class Bundle(object):
             with (path / name).open(mode='wb') as dst:
                 shutil.copyfileobj(src, dst)
 
-        # Save the manifest
-        manifest.save(path=path / Bundle.MANIFEST_FILENAME)
+        # Ensure the bundle contains a correct manifest
+        if 'manifest' in fragments:
+            # Load manifest from filesystem
+            manifest = Manifest.load(path=path / Bundle.MANIFEST_FILENAME)
+
+            # Ensure the document ID in the manifest is correct
+            if manifest.did != did:
+                manifest.did = did
+
+                # Save the manifest with changed document ID
+                manifest.save(path=path / Bundle.MANIFEST_FILENAME)
+
+        else:
+            # Build a new manifest
+            manifest = Manifest(did=did,
+                                uploaded=datetime.datetime.now())
+
+            # Save the manifest
+            manifest.save(path=path / Bundle.MANIFEST_FILENAME)
 
         # Create the bundle
         bundle = Bundle(storage=storage,
-                        did=manifest.did)
+                        did=did)
 
         return bundle
 
@@ -120,11 +199,11 @@ class Storage(object):
 
 
     def create(self,
-               manifest,
-               fragments):
+               fragments,
+               did=Ellipsis):
         return Bundle.create(storage=self,
-                             manifest=manifest,
-                             fragments=fragments)
+                             fragments=fragments,
+                             did=did)
 
 
     def get(self, did):

@@ -54,6 +54,9 @@ pdfunite \
 # Extract the text of the final pdf file
 pdftotext final.pdf
 
+# Create a preview thubnail
+convert -thumbnail x1024 'final.pdf[0]' preview.png
+
 # Restore working directory
 popd
 

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="favicon.png" type="image/png">
+
+    <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap/css/bootstrap-theme.min.css">
+
+    <link rel="stylesheet" href="lib/font-awesome/css/font-awesome.min.css">
+
+    <link rel="stylesheet" href="site.css">
+
+    <script src="lib/requirejs/js/require.js"
+            data-main="site.js"
+            async></script>
+
+    <title>adacta</title>
+  </head>
+
+  <body>
+    include "include/navbar.html"
+
+    <div class="container-fluid">
+      <div data-bind="page: {id: 'inbox', with: inbox}">
+        include "pages/inbox.html"
+      </div>
+
+      <div data-bind="page: {id: 'robot', with: robot}">
+        include "pages/robot.html"
+      </div>
+
+      <div data-bind="page: {id: 'archive', with: archive}">
+        include "pages/archive.html"
+      </div>
+
+      <div data-bind="page: {id: 'settings', with: settings}">
+        include "pages/settings.html"
+      </div>
+
+      <div data-bind="page: {id: 'user', with: user}">
+        include "pages/user.html"
+      </div>
+    </div>
+  </body>
+</html>

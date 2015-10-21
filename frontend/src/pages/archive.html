@@ -1,0 +1,91 @@
+<div class="row">
+
+  <div class="col-md-2">
+    <div class="list-group">
+      <div class="list-group-item">
+        <h4 class="list-group-item-heading">
+          <i class="fa fa-fw fa-upload"></i>
+          Uploaded
+        </h4>
+
+        <div class="list-group-item-text ">
+          <div class="input-group">
+            <div style="display: table-row">
+              <span class="input-group-addon"
+                    style="border-bottom-left-radius: 0;">
+                <i class="fa fa-fw fa-chevron-down"></i>
+              </span>
+              <input class="form-control"
+                     type="date"
+                     style="border-bottom-right-radius: 0;"
+                     data-bind="textInput: queryUploaded[0]">
+            </div>
+            <div style="display: table-row">
+              <span class="input-group-addon"
+                    style="border-top-left-radius: 0;">
+                <i class="fa fa-fw fa-chevron-up"></i>
+              </span>
+              <input class="form-control"
+                     style="border-top-right-radius: 0;"
+                     type="date"
+                     data-bind="textInput: queryUploaded[1]">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-group-item">
+        <h4 class="list-group-item-heading">
+          <i class="fa fa-fw fa-tags"></i>
+          Tags
+        </h4>
+
+        <ul class="list-group-item-text list-unstyled"
+            data-bind="foreach: tags">
+          <li class="checkbox">
+            <label>
+              <input type="checkbox"
+                     value=""
+                     data-bind="value: key,
+                                checked: $parent.queryTags">
+              <span data-bind="text: key"></span>
+            </label>
+            <span class="badge pull-right"
+                  data-bind="text: doc_count"></span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-10">
+    <div class="row"
+         style="margin-bottom: 15px;">
+      <div class="col-lg-12">
+        <div class="input-group input-group-lg">
+          <span class="input-group-addon">
+            <i class="fa fa-search"></i>
+          </span>
+          <input class="form-control"
+                 type="text"
+                 placeholder="Search in Archive"
+                 data-bind="textInput: querySearch">
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="doc-list"
+           data-bind="foreach: documents">
+        <div class="col-xs-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="doc">
+            <a href="#">
+              <img data-bind="attr: {src: previewUrl}">
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

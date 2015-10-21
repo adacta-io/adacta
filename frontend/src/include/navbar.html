@@ -1,0 +1,91 @@
+<nav role="navigation"
+     class="navbar navbar-default navbar-fixed-top navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button"
+              data-toggle="collapse"
+              data-target=".navbar-collapse"
+              aria-expanded="false"
+              aria-controls="navbar"
+              class="navbar-toggle collapsed">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+
+      <span class="navbar-brand">
+        <img alt="adacta" src="logo.png">
+      </span>
+    </div>
+
+    <div class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <!-- ko with: page('inbox') -->
+        <li data-bind="css: {active: isVisible}">
+          <a data-bind="page-href: $data">
+            <i class="fa fa-inbox"></i>
+            &nbsp;
+            Inbox
+            &nbsp;
+            <span class="badge"
+                  data-bind="text: $root.inbox.count"></span>
+            <!-- /ko -->
+          </a>
+        </li>
+        <!-- /ko -->
+        <!-- ko with: page('robot') -->
+        <li data-bind="css: {active: isVisible}">
+          <a data-bind="page-href: $data">
+            <i class="fa fa-rocket"></i>&nbsp;
+            Robot</a></li>
+        <!-- /ko -->
+        <!-- ko with: page('archive') -->
+        <li data-bind="css: {active: isVisible}">
+          <a data-bind="page-href: $data">
+            <i class="fa fa-archive"></i>
+            &nbsp;
+            Archive
+          </a>
+        </li>
+        <!-- /ko -->
+      </ul>
+
+      <ul class="nav navbar-nav navbar-right">
+        <!-- ko with: page('archive') -->
+        <!-- ko ifnot: isVisible -->
+        <li>
+          <form role="search"
+                class="navbar-form">
+            <div class="input-group">
+              <span class="input-group-addon">
+                <i class="fa fa-search"></i>
+              </span>
+              <input class="form-control"
+                     type="text"
+                     placeholder="Search in Archive">
+            </div>
+          </form>
+        </li>
+        <!-- /ko -->
+        <!-- /ko -->
+
+        <!-- ko with: page('settings') -->
+        <li data-bind="css: {active: isVisible}">
+          <a data-bind="page-href: $data">
+            <i class="fa fa-gears"></i>
+          </a>
+        </li>
+        <!-- /ko -->
+
+        <!-- ko with: page('user') -->
+        <li data-bind="css: {active: isVisible}">
+          <a data-bind="page-href: $data">
+            <i class="fa fa-user"></i>
+          </a>
+        </li>
+        <!-- /ko -->
+      </ul>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,40 @@
+// Add some space for the navigation bar
+body {
+  padding-top: 70px;
+}
+
+// Make some more room for the logo
+.navbar-brand {
+  padding-top: 10px;
+  padding-bottom: 10px;
+
+  img {
+    width: auto;
+    height: 1.7em;
+  }
+}
+
+.doc-list {
+  list-style: none;
+
+  padding: 0;
+
+  .doc {
+    border: #DDD 1px solid;
+    border-radius: 4px;
+    box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.05);
+
+    margin-bottom: 15px;
+
+    img {
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  .doc.selected {
+    border-color: #66AFE9;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(102, 175, 233, 0.6);
+    outline: 0 none;
+  }
+}

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="favicon.png" type="image/png">
+
+    <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap/css/bootstrap-theme.min.css">
+
+    <link rel="stylesheet" href="lib/font-awesome/css/font-awesome.min.css">
+
+    <link rel="stylesheet" href="site.css">
+
+    <script src="lib/requirejs/js/require.js"
+            data-main="site.js"
+            async></script>
+
+    <title>adacta</title>
+  </head>
+
+  <body>
+    <nav role="navigation"
+         class="navbar navbar-default navbar-fixed-top navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button"
+                  data-toggle="collapse"
+                  data-target=".navbar-collapse"
+                  aria-expanded="false"
+                  aria-controls="navbar"
+                  class="navbar-toggle collapsed">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+
+          <span class="navbar-brand">
+            <img alt="adacta" src="logo.png">
+          </span>
+        </div>
+
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <!-- ko with: page('inbox') -->
+            <li data-bind="css: {active: isVisible}">
+              <a data-bind="page-href: $data">
+                <i class="fa fa-inbox"></i>
+                &nbsp;
+                Inbox
+                &nbsp;
+                <span class="badge"
+                      data-bind="text: $root.inbox.count"></span>
+                <!-- /ko -->
+              </a>
+            </li>
+            <!-- /ko -->
+            <!-- ko with: page('robot') -->
+            <li data-bind="css: {active: isVisible}">
+              <a data-bind="page-href: $data">
+                <i class="fa fa-rocket"></i>&nbsp;
+                Robot</a></li>
+            <!-- /ko -->
+            <!-- ko with: page('archive') -->
+            <li data-bind="css: {active: isVisible}">
+              <a data-bind="page-href: $data">
+                <i class="fa fa-archive"></i>
+                &nbsp;
+                Archive
+              </a>
+            </li>
+            <!-- /ko -->
+          </ul>
+
+          <ul class="nav navbar-nav navbar-right">
+            <!-- ko with: page('archive') -->
+            <!-- ko ifnot: isVisible -->
+            <li>
+              <form role="search"
+                    class="navbar-form">
+                <div class="input-group">
+                  <span class="input-group-addon">
+                    <i class="fa fa-search"></i>
+                  </span>
+                  <input class="form-control"
+                         type="text"
+                         placeholder="Search in Archive">
+                </div>
+              </form>
+            </li>
+            <!-- /ko -->
+            <!-- /ko -->
+
+            <!-- ko with: page('settings') -->
+            <li data-bind="css: {active: isVisible}">
+              <a data-bind="page-href: $data">
+                <i class="fa fa-gears"></i>
+              </a>
+            </li>
+            <!-- /ko -->
+
+            <!-- ko with: page('user') -->
+            <li data-bind="css: {active: isVisible}">
+              <a data-bind="page-href: $data">
+                <i class="fa fa-user"></i>
+              </a>
+            </li>
+            <!-- /ko -->
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+
+    <div class="container-fluid">
+      <div data-bind="page: {id: 'inbox', with: inbox}">
+        <div class="row">
+          <div class="col-md-2"
+               style="height: calc(100vh - 90px);
+                      overflow-y: auto;">
+            <ul class="doc-list"
+                data-bind="foreach: $page.children">
+              <li class="doc"
+                  data-bind="css: {selected: isVisible}">
+                <a data-bind="page-href: $data,
+                              with: viewModel">
+                  <img data-bind="attr: {src: previewUrl}">
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="col-md-10"
+               data-bind="foreach: documents">
+            <div class="row"
+                 data-bind="page: {id: $data.did}">
+              <div class="col-md-8">
+                <object type="application/pdf"
+                        data-bind="attr: {data: '/api/v1/bundles/' + $data.did + '/fragments/final.pdf'}"
+                        style="width: 100%;
+                               height: calc(100vh - 90px);">
+                </object>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label class="col-xs-1 control-label">
+                    <i class="fa fa-globe"></i>
+                  </label>
+
+                  <div class="col-xs-11">
+                    <p class="form-control-static"
+                       data-bind="text: did">
+                    </p>
+                  </div>
+
+                  <label class="col-xs-1 control-label">
+                    <i class="fa fa-upload"></i>
+                  </label>
+
+                  <div class="col-xs-11">
+                    <p class="form-control-static"
+                       data-bind="text: uploaded"></p>
+                  </div>
+                </div>
+
+                <hr>
+
+                <div class="form-group">
+                  <label class="col-xs-1 control-label">
+                    <i class="fa fa-tags"></i>
+                  </label>
+
+                  <div class="col-xs-11">
+                    <ul class="list-group">
+                      <!-- ko foreach: tags -->
+                      <li class="list-group-item">
+                        <p class="form-control-static">
+                          <span data-bind="text: $data"></span>
+                          <a href=""
+                             class="pull-right"
+                             data-bind="click: $parent.removeTag">
+                            <i class="fa fa-remove"></i>
+                          </a>
+                        </p>
+                      </li>
+                      <!-- /ko -->
+
+                      <li class="list-group-item">
+                        <div class="input-group input-group-sm">
+                          <input type="text"
+                                 class="form-control"
+                                 placeholder="Add tag..."
+                                 data-bind="textInput: intermediateTag">
+                            <span class="input-group-btn">
+                              <button class="btn btn-default"
+                                      type="button"
+                                      data-bind="click: addTag">
+                                <i class="fa fa-plus"></i>
+                              </button>
+                            </span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <hr>
+
+                <div class="form-group">
+                  <div class="col-xs-12">
+                    <button class="btn btn-primary btn-lg"
+                            type="button"
+                            style="width: 100%;"
+                            data-bind="click: function() { $parents[1].archive($data); }">
+                      <i class="fa fa-archive"></i>
+                      Archive
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div data-bind="page: {id: 'robot', with: robot}">
+
+      </div>
+
+      <div data-bind="page: {id: 'archive', with: archive}">
+        <div class="row">
+
+          <div class="col-md-2">
+            <div class="list-group">
+              <div class="list-group-item">
+                <h4 class="list-group-item-heading">
+                  <i class="fa fa-fw fa-upload"></i>
+                  Uploaded
+                </h4>
+
+                <div class="list-group-item-text ">
+                  <div class="input-group">
+                    <div style="display: table-row">
+                      <span class="input-group-addon"
+                            style="border-bottom-left-radius: 0;">
+                        <i class="fa fa-fw fa-chevron-down"></i>
+                      </span>
+                      <input class="form-control"
+                             type="date"
+                             style="border-bottom-right-radius: 0;"
+                             data-bind="textInput: queryUploaded[0]">
+                    </div>
+                    <div style="display: table-row">
+                      <span class="input-group-addon"
+                            style="border-top-left-radius: 0;">
+                        <i class="fa fa-fw fa-chevron-up"></i>
+                      </span>
+                      <input class="form-control"
+                             style="border-top-right-radius: 0;"
+                             type="date"
+                             data-bind="textInput: queryUploaded[1]">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="list-group-item">
+                <h4 class="list-group-item-heading">
+                  <i class="fa fa-fw fa-tags"></i>
+                  Tags
+                </h4>
+
+                <ul class="list-group-item-text list-unstyled"
+                    data-bind="foreach: tags">
+                  <li class="checkbox">
+                    <label>
+                      <input type="checkbox"
+                             value=""
+                             data-bind="value: key,
+                                        checked: $parent.queryTags">
+                      <span data-bind="text: key"></span>
+                    </label>
+                    <span class="badge pull-right"
+                          data-bind="text: doc_count"></span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-10">
+            <div class="row"
+                 style="margin-bottom: 15px;">
+              <div class="col-lg-12">
+                <div class="input-group input-group-lg">
+                  <span class="input-group-addon">
+                    <i class="fa fa-search"></i>
+                  </span>
+                  <input class="form-control"
+                         type="text"
+                         placeholder="Search in Archive"
+                         data-bind="textInput: querySearch">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="doc-list"
+                   data-bind="foreach: documents">
+                <div class="col-xs-12 col-sm-6 col-md-4 col-lg-2">
+                  <div class="doc">
+                    <a href="#">
+                      <img data-bind="attr: {src: previewUrl}">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div data-bind="page: {id: 'settings', with: settings}">
+
+      </div>
+
+      <div data-bind="page: {id: 'user', with: user}">
+
+      </div>
+    </div>
+  </body>
+</html>

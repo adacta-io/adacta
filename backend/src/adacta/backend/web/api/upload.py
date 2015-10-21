@@ -1,6 +1,8 @@
-import datetime
-
 from require import *
+
+import datetime
+import uuid
+
 from adacta.backend.web.api import resource
 
 
@@ -13,20 +15,16 @@ def upload(storage,
            index,
            request):
 
-    # Get creation date from request
-    uploaded = request.params.getone('uploaded',
-                                     default=None,
-                                     type=datetime.datetime.fromtimestamp)
-
-    # Get tags from request
-    tags = set(request.params.getall('tags'))
+    # Get the predefined document ID to use (if any)
+    did = request.params.getone('did',
+                                default=Ellipsis,
+                                type=uuid.UUID)
 
     # Create the bundle using all uploaded files
     bundle = storage.create(fragments={file.filename: file.file
                                        for file
                                        in request.files.values()},
-                            uploaded=uploaded,
-                            tags=tags)
+                            did=did)
 
     # Index the created bundle
     index.index(bundle)

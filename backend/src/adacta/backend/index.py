@@ -50,33 +50,14 @@ class Index(object):
 
 
     def search(self,
-               query,
-               tags):
-        query = {
-            'query_string': {
-                'query': query,
-                'default_field': 'text',
-            }
-        }
+               body=Ellipsis,
+               **kwargs):
 
-        if tags:
-            filter = {
-                'and': [
-                    {
-                        'term': {
-                            'tags': tag,
-                        }
-                    } for tag in tags
-                ]
-            }
+        if body is Ellipsis:
+            body = kwargs
         else:
-            filter = {
-                'match_all': {}
-            }
+            body.update(kwargs)
 
         return self.__es.search(index=self.ES_INDEX,
                                 doc_type=self.ES_TYPE,
-                                body={
-                                    'query': query,
-                                    'filter': filter,
-                                })['hits']
+                                body=body)

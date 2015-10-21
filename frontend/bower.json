@@ -1,0 +1,58 @@
+{
+  "name": "adacta",
+  "homepage": "https://github.com/fooker/adacta",
+  "description": "A personal document manager",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "src"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.3.5",
+    "font-awesome": "~4.4.0",
+    "knockoutjs": "~3.3.0",
+    "pagerjs": "~1.0.1",
+    "requirejs": "~2.1.20",
+    "requirejs-text": "~2.0.14",
+    "requirejs-domready": "~2.0.1",
+    "typeahead.js": "~0.11.1"
+  },
+  "exportsOverride": {
+    "jquery": {
+      "js": "dist/jquery.js"
+    },
+    "bootstrap": {
+      "css": [
+        "dist/css/bootstrap.min.css",
+        "dist/css/bootstrap-theme.min.css"
+      ],
+      "js": "dist/js/bootstrap.min.js"
+    },
+    "font-awesome": {
+      "css": "css/font-awesome.min.css",
+      "fonts": "fonts/*"
+    },
+    "knockoutjs": {
+      "js": "dist/knockout.debug.js"
+    },
+    "curl": {
+      "js": "dist/curl/curl.js"
+    },
+    "pagerjs": {
+      "js": "dist/pager.min.js"
+    },
+    "requirejs": {
+      "js": "require.js"
+    },
+    "requirejs-domready": {
+      "js": "domReady.js"
+    },
+    "requirejs-text": {
+      "js": "text.js"
+    },
+    "typeahead.js": {
+      "js": "dist/typeahead.bundle.js"
+    }
+  }
+}
