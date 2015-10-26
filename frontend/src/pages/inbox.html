@@ -8,7 +8,7 @@
           data-bind="css: {selected: isVisible}">
         <a data-bind="page-href: $data,
                       with: viewModel">
-          <img data-bind="attr: {src: previewUrl}">
+          <img data-bind="attr: {src: thumbnailUrl}">
         </a>
       </li>
     </ul>
@@ -20,7 +20,7 @@
          data-bind="page: {id: $data.did}">
       <div class="col-md-8">
         <object type="application/pdf"
-                data-bind="attr: {data: '/api/v1/bundles/' + $data.did + '/fragments/final.pdf'}"
+                data-bind="attr: {data: documentUrl}"
                 style="width: 100%;
                        height: calc(100vh - 90px);">
         </object>

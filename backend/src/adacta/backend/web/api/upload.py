@@ -9,10 +9,10 @@ from adacta.backend.web.api import resource
 
 @resource('/upload', ['POST'])
 @require(storage='adacta.backend.storage:Storage',
-         index='adacta.backend.index:Index',
+         pipeline='adacta.backend.pipeline:Pipeline',
          request='adacta.backend.web.api:Request')
 def upload(storage,
-           index,
+           pipeline,
            request):
 
     # Get the predefined document ID to use (if any)
@@ -21,13 +21,13 @@ def upload(storage,
                                 type=uuid.UUID)
 
     # Create the bundle using all uploaded files
-    bundle = storage.create(fragments={file.filename: file.file
+    bundle = storage.create(fragments={file.name: file.file
                                        for file
                                        in request.files.values()},
                             did=did)
 
-    # Index the created bundle
-    index.index(bundle)
+    # Place the bundle in the pipeline
+    pipeline.put(bundle)
 
     # return the bundles manifest as JSON
     return bundle.load_manifest().to_json()

@@ -8,6 +8,9 @@ def Config():
         'storage': {
             'path': '/tmp/adacta/data'
         },
+        'pipeline': {
+            'path': '/tmp/adacta/pipeline'
+        },
         'index': {
             'host': None
         }

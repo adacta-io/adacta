@@ -3,6 +3,8 @@ from require import *
 import elasticsearch as es
 import munch
 
+from adacta.backend.storage import Bundle
+
 
 
 @export()
@@ -37,16 +39,16 @@ class Index(object):
         data = munch.Munch(manifest.to_json())
 
         # Copy textual content if available
-        if 'final.txt' in bundle:
-            with bundle.open('final.txt') as f:
+        if Bundle.FILENAME_DOCUMENT_TXT in bundle:
+            with bundle.open(Bundle.FILENAME_DOCUMENT_TXT) as f:
                 data.text = f.read()
 
         # Index the bundle
-        self.log.debug('Indexing bundle %s: (%s)', manifest.did, data)
+        self.log.debug('Indexing bundle %s: (%s)', bundle.did, data)
         self.__es.index(index=self.ES_INDEX,
                         doc_type=self.ES_TYPE,
                         body=data,
-                        id=manifest.did)
+                        id=bundle.did)
 
 
     def search(self,

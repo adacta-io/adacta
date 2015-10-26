@@ -28,10 +28,6 @@ class UUIDProperty(JsonProperty):
 
 
 class Manifest(JsonObject):
-    did = UUIDProperty(default=uuid.uuid4)
-    """ The document ID.
-    """
-
     uploaded = DateTimeProperty(default=datetime.datetime.now)
     """ The point in time, when the document was uploaded.
     """
@@ -75,7 +71,14 @@ class Manifest(JsonObject):
 
 
 class Bundle(object):
-    MANIFEST_FILENAME = 'manifest'
+    FILENAME_MANIFEST = 'manifest'
+    FILENAME_DOCUMENT_PDF = 'document.pdf'
+    FILENAME_DOCUMENT_TXT = 'document.txt'
+    FILENAME_THUMBNAIL = 'thumbnail.png'
+    FILENAME_LOG = 'log'
+
+
+    log = require('adacta.backend.utils:Logger')
 
 
     def __init__(self,
@@ -104,11 +107,11 @@ class Bundle(object):
 
 
     def load_manifest(self):
-        return Manifest.load(path=self.path / Bundle.MANIFEST_FILENAME)
+        return Manifest.load(path=self.path / Bundle.FILENAME_MANIFEST)
 
 
     def save_manifest(self, manifest):
-        manifest.save(path=self.path / Bundle.MANIFEST_FILENAME)
+        manifest.save(path=self.path / Bundle.FILENAME_MANIFEST)
 
 
     def delete(self):
@@ -155,24 +158,12 @@ class Bundle(object):
                 shutil.copyfileobj(src, dst)
 
         # Ensure the bundle contains a correct manifest
-        if 'manifest' in fragments:
-            # Load manifest from filesystem
-            manifest = Manifest.load(path=path / Bundle.MANIFEST_FILENAME)
-
-            # Ensure the document ID in the manifest is correct
-            if manifest.did != did:
-                manifest.did = did
-
-                # Save the manifest with changed document ID
-                manifest.save(path=path / Bundle.MANIFEST_FILENAME)
-
-        else:
+        if Bundle.FILENAME_MANIFEST not in fragments:
             # Build a new manifest
-            manifest = Manifest(did=did,
-                                uploaded=datetime.datetime.now())
+            manifest = Manifest(uploaded=datetime.datetime.now())
 
             # Save the manifest
-            manifest.save(path=path / Bundle.MANIFEST_FILENAME)
+            manifest.save(path=path / Bundle.FILENAME_MANIFEST)
 
         # Create the bundle
         bundle = Bundle(storage=storage,

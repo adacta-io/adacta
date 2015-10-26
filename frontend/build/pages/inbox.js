@@ -26,7 +26,8 @@
             };
           })(this)
         });
-        this.previewUrl = api().at('bundles').at(this.did).at('fragments').at('preview.png').path;
+        this.thumbnailUrl = api().at('bundles').at(this.did).at('thumbnail.png').path;
+        this.documentUrl = api().at('bundles').at(this.did).at('document.pdf').path;
       }
 
       Document.prototype.removeTag = function(tag) {

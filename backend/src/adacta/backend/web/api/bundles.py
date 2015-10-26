@@ -70,26 +70,6 @@ def put_manifest(did,
 
 
 
-@resource('/bundles/<did>/fragments', ['GET'])
-@require(storage='adacta.backend.storage:Storage')
-def get_fragments(did,
-                  storage):
-    did = uuid.UUID(did)
-
-    # Try to resolve the bundle
-    try:
-        bundle = storage.get(did)
-
-    except FileNotFoundError:
-        raise bottle.HTTPError(404, 'Bundle does not exist: %s' % did)
-
-    # Return the list of fragments
-    return {'did': str(did),
-            'fragments': list(bundle)}
-
-
-
-@resource('/bundles/<did>/fragments/<name>', ['GET'])
 @require(storage='adacta.backend.storage:Storage')
 def get_fragment(did,
                  name,
@@ -108,6 +88,19 @@ def get_fragment(did,
         raise bottle.HTTPError(404, 'Fragment does not exist: %s/%s' % (did, name))
 
     # Serve the fragment content
-    # TODO: Don't allow access to whole system
-    return bottle.static_file(filename=str(bundle[name]),
-                              root='/')
+    return bottle.static_file(filename=str(bundle[name].relative_to(bundle.path)),
+                              root=str(bundle.path))
+
+
+
+@resource('/bundles/<did>/document.pdf', ['GET'])
+def get_document(did):
+    return get_fragment(did=did,
+                        name='document.pdf')
+
+
+
+@resource('/bundles/<did>/thumbnail.png', ['GET'])
+def get_document(did):
+    return get_fragment(did=did,
+                        name='thumbnail.png')

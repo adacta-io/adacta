@@ -1,7 +1,7 @@
 define ['jquery', 'knockout', 'utils', 'api'], ($, ko, utils, api) ->
   class Document
     constructor: (@did) ->
-      @previewUrl = api().at('bundles').at(@did).at('fragments').at('preview.png').path
+      @thumbnailUrl = api().at('bundles').at(@did).at('thumbnail.png').path
 
 
   class Archive extends utils.RequestingModel

@@ -7,7 +7,7 @@
     Document = (function() {
       function Document(did) {
         this.did = did;
-        this.previewUrl = api().at('bundles').at(this.did).at('fragments').at('preview.png').path;
+        this.thumbnailUrl = api().at('bundles').at(this.did).at('thumbnail.png').path;
       }
 
       return Document;
