@@ -10,7 +10,7 @@ fi
 # Extract text from original PDF
 pdftotext "original.pdf" "original.txt"
 
-# Decide wether to enhance or not
+# Decide whether to enhance or not
 if [[ "$(wc -c < "original.txt")" -lt 10 ]]; then
   "$(dirname "$0")/enhance.sh"
 else
@@ -19,5 +19,5 @@ else
   cp 'original.txt' 'document.pdf'
 fi
 
-# Extract thumbnails
-convert -thumbnail x1024 'document.pdf' 'thumbnail-%03d.png'
+# Extract preview
+convert -thumbnail x1024 'document.pdf[0]' 'preview.png'

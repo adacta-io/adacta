@@ -2,13 +2,13 @@ use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use futures::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Metadata {
     pub uploaded: DateTime<Utc>,
-    pub reviewed: Option<DateTime<Utc>>,
+    pub archived: Option<DateTime<Utc>>,
 
     pub tags: HashSet<String>,
 
@@ -19,7 +19,7 @@ impl Metadata {
     pub fn new() -> Self {
         return Self {
             uploaded: Utc::now(),
-            reviewed: None,
+            archived: None,
             tags: HashSet::new(),
             properties: HashMap::new(),
         };

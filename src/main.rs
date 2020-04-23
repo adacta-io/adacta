@@ -7,22 +7,27 @@ use crate::config::{Config, IndexConfig, JuicerConfig};
 use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::repo::Repository;
+use crate::auth::Authenticator;
 
 pub mod meta;
 pub mod repo;
 pub mod index;
 pub mod api;
+pub mod auth;
 pub mod model;
 pub mod config;
 pub mod juicer;
 
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     let config = Config::load("adacta.yaml").await?;
 
+    // Create auth instance
+    let auth = Authenticator::from_config(config.auth).await?;
+
     // Open repository
-    let repo = Repository::open(config.repository).await?;
+    let repo = Repository::from_config(config.repository).await?;
 
     // Create indexier instance
     let index: Box<dyn Index + Send + Sync> = match config.index {
@@ -35,12 +40,14 @@ async fn main() -> Result<()> {
     };
 
     rocket::ignite()
+        .attach(api::Authentication {})
+        .manage(auth)
         .manage(repo)
         .manage(index)
         .manage(juicer)
-//        .mount("/", routes![hello])
         .mount("/api", api::routes())
-        .launch()?;
+        .serve()
+        .await?;
 
     return Ok(());
 }

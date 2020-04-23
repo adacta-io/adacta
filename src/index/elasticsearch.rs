@@ -5,12 +5,13 @@ use chrono::{DateTime, Utc};
 use elasticsearch::{Elasticsearch, IndexParts, SearchParts};
 use elasticsearch::http::transport::Transport;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{json, value::{RawValue, Value}};
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 
 use crate::config::ElasticsearchIndexConfig;
+use crate::index::SearchResponse;
 use crate::model::DocId;
 use crate::repo::Bundle;
 
@@ -20,7 +21,7 @@ const DOCUMENT_TYPE: &'static str = "document";
 struct Source {
     text: String,
     uploaded: DateTime<Utc>,
-    reviewed: Option<DateTime<Utc>>,
+    archived: Option<DateTime<Utc>>,
     tags: HashSet<String>,
     properties: HashMap<String, String>,
 }
@@ -41,22 +42,42 @@ impl Index {
         let transport = Transport::single_node(&url)?;
         let client = Elasticsearch::new(transport);
 
+        client.ping().send().await?;
+
         return Ok(Self {
             client,
             index,
         });
     }
 
-    async fn query(&self, query: Value) -> Result<Value> {
+    async fn query(&self, mut query: Value) -> Result<SearchResponse> {
+        // Enable exact hit count
+        query["track_total_hits"] = true.into();
+
+        // Execute the query
         let response = self.client.search(SearchParts::IndexType(&[&self.index], &[DOCUMENT_TYPE]))
             .body(query)
             .send()
-            .await?
-            .error_for_status_code()?;
+            .await?;
+
+        if !response.status_code().is_success() {
+            return Err(anyhow!("ElasticSearch Query error: {}", response.read_body::<Box<RawValue>>().await?));
+        }
 
         let response = response.read_body::<Value>().await?;
 
-        return Ok(response);
+        let count = response["hits"]["total"]["value"].as_u64().expect("no usize");
+
+        let docs = response["hits"]["hits"].as_array().expect("no array")
+            .into_iter()
+            .map(|hit| hit["_id"].as_str().expect("no atr"))
+            .map(DocId::from_str)
+            .collect::<Result<Vec<_>>>()?;
+
+        return Ok(SearchResponse {
+            count,
+            docs,
+        });
     }
 }
 
@@ -74,7 +95,7 @@ impl super::Index for Index {
             .body(Source {
                 text,
                 uploaded: meta.uploaded,
-                reviewed: meta.reviewed,
+                archived: meta.archived,
                 tags: meta.tags,
                 properties: meta.properties,
             })
@@ -84,29 +105,31 @@ impl super::Index for Index {
         return Ok(());
     }
 
-    async fn search(&self, query: &str) -> Result<Vec<DocId>> {
-        let response = self.query(json!({
-                "query": {
-                    "bool" : {
-                        "must" : {
-                            "query_string" : {
-                                "query" : query
-                            }
+    async fn search(&self, query: &str) -> Result<SearchResponse> {
+        return self.query(json!({
+            "query": {
+                "bool" : {
+                    "must" : {
+                        "simple_query_string" : {
+                            "query" : query
                         }
                     }
                 }
-            })).await?;
-
-        let hits = response["hits"]["hits"].as_array().expect("no array")
-            .into_iter()
-            .map(|hit| hit["id"].as_str().expect("no atr"))
-            .map(DocId::from_str)
-            .collect::<Result<Vec<_>>>()?;
-
-        return Ok(hits);
+            }
+        })).await;
     }
 
-    async fn inbox(&self) -> Result<Vec<DocId>> {
-        unimplemented!()
+    async fn inbox(&self) -> Result<SearchResponse> {
+        return self.query(json!({
+            "query": {
+                "bool": {
+                    "must_not": {
+                        "exists": {
+                            "field": "archived"
+                        }
+                    }
+                }
+            }
+        })).await;
     }
 }

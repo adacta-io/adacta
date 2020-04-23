@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:7.6.2'
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      'discovery.type': 'single-node'
+
+  elastichq:
+    image: 'elastichq/elasticsearch-hq'
+    ports:
+      - 9201:5000
+
+

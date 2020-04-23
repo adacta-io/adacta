@@ -1,8 +1,22 @@
+use std::path::Path;
+
 use anyhow::Result;
-use async_std::fs::OpenOptions;
-use async_std::path::Path;
-use futures::AsyncReadExt;
 use serde::Deserialize;
+use tokio::fs::OpenOptions;
+use tokio::io::AsyncReadExt;
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AuthConfig {
+    pub username: String,
+    pub passhash: String,
+
+    pub secret: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RepositoryConfig {
+    pub path: String,
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ElasticsearchIndexConfig {
@@ -31,7 +45,9 @@ pub enum JuicerConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
-    pub repository: String,
+    pub auth: AuthConfig,
+
+    pub repository: RepositoryConfig,
 
     pub index: IndexConfig,
     pub juicer: JuicerConfig,

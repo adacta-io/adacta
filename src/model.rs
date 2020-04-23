@@ -5,6 +5,8 @@ use anyhow::{Error, anyhow};
 use uuid::Uuid;
 use base58::{FromBase58, ToBase58};
 use serde::{Serialize, Serializer};
+use std::fmt::Display;
+use serde::export::Formatter;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct DocId(Uuid);
@@ -46,7 +48,7 @@ impl std::fmt::Display for DocId {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Kind {
     Document,
-    Thumbnail { page: usize },
+    Preview,
     Plaintext,
     Metadata,
     ProcessLog,

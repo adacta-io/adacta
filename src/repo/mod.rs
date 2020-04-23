@@ -1,12 +1,13 @@
 use std::ffi::OsString;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use async_std::fs::OpenOptions;
-use async_std::path::{Path, PathBuf};
-use futures::{AsyncRead, AsyncReadExt, AsyncWrite};
+use tokio::fs::OpenOptions;
+use tokio::io::{AsyncWrite, AsyncRead, AsyncReadExt};
 
 use crate::meta::Metadata;
 use crate::model::{DocId, Kind};
+use crate::config::RepositoryConfig;
 
 trait Filename {
     fn filename(&self) -> OsString;
@@ -33,7 +34,7 @@ impl Filename for Kind {
     fn filename(&self) -> OsString {
         return match self {
             Self::Document => OsString::from("document.pdf"),
-            Self::Thumbnail { page } => OsString::from(format!("thumbnail-{:03}.png", page)),
+            Self::Preview => OsString::from("preview.png"),
             Self::Plaintext => OsString::from("document.txt"),
             Self::Metadata => OsString::from("metadata.json"),
             Self::ProcessLog => OsString::from("process.log"),
@@ -57,9 +58,9 @@ impl Fragment {
         return self.path.as_path();
     }
 
-    pub async fn exists(&self) -> bool {
-        return self.path.exists().await;
-    }
+//    pub async fn exists(&self) -> bool {
+//        return self.path.exists().await;
+//    }
 
     pub async fn read(&self) -> Result<impl AsyncRead> {
         let file = OpenOptions::new()
@@ -89,14 +90,15 @@ impl Bundle {
         return self.path.as_path();
     }
 
-    pub async fn exists(&self) -> bool {
-        return self.path.exists().await;
-    }
+//    pub async fn exists(&self) -> bool {
+//        return self.path.exists().await;
+//    }
 
     pub async fn fragment(&self, kind: Kind) -> Option<Fragment> {
         let path = self.path.join(kind.filename());
 
-        if !path.exists().await {
+        let metadata = tokio::fs::metadata(&path).await;
+        if !metadata.is_ok() {
             return None;
         }
 
@@ -122,14 +124,14 @@ impl Bundle {
 }
 
 impl Repository {
-    pub async fn open(path: impl AsRef<Path>) -> Result<Self> {
+    pub async fn from_config(config: RepositoryConfig) -> Result<Self> {
+        let path = PathBuf::from(config.path);
+
         // Create repository path if missing
-        if !path.as_ref().exists().await {
-            async_std::fs::create_dir_all(path.as_ref()).await?;
-        }
+        tokio::fs::create_dir_all(&path).await?;
 
         return Ok(Self {
-            path: path.as_ref().to_owned(),
+            path,
         });
     }
 
@@ -155,7 +157,8 @@ impl Repository {
     pub async fn get(&self, id: DocId) -> Option<Bundle> {
         let path = self.path.join(id.filename());
 
-        if !path.exists().await {
+        let metadata = tokio::fs::metadata(&path).await;
+        if !metadata.is_ok() {
             return None;
         }
 
@@ -169,7 +172,7 @@ impl Repository {
         let id = DocId::random();
         let path = self.path.join("staging").join(id.filename());
 
-        async_std::fs::create_dir_all(&path).await?;
+        tokio::fs::create_dir_all(&path).await?;
 
         return Ok(BundleStaging {
             id,
@@ -191,7 +194,7 @@ impl BundleStaging {
     pub async fn create(self, repo: &Repository) -> Result<Bundle> {
         let target_path = repo.path.join(self.id.filename());
 
-        async_std::fs::rename(&self.path, &target_path).await?;
+        tokio::fs::rename(&self.path, &target_path).await?;
 
         return Ok(Bundle {
             id: self.id,
@@ -215,8 +218,4 @@ impl BundleStaging {
     pub fn path(&self) -> &Path {
         return &self.path;
     }
-}
-
-pub struct Config {
-
 }
