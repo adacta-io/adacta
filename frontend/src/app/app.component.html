@@ -1,0 +1,32 @@
+<div class="main-container">
+<header class="header header-1">
+  <img class="branding" src="/assets/logo_large.svg" style="padding-top: 0.4rem; padding-bottom: 0.4rem;">
+
+  <div class="header-nav">
+    <a class="nav-link nav-icon-text" routerLink="/inbox" routerLinkActive="active" *ngIf="auth.authenticated">
+      <clr-icon shape="install"></clr-icon>
+      <span class="nav-text">Inbox&nbsp;
+        <span class="badge" *ngIf="inboxCounter">{{inboxCounter}}</span>
+      </span>
+    </a>
+
+  <form class="search" *ngIf="auth.authenticated">
+    <label for="search_input">
+      <input id="search_input" type="text" placeholder="Search for documents...">
+    </label>
+  </form>
+  </div>
+
+  <div class="header-actions">
+    <a class="nav-link nav-icon" aria-label="labels" routerLink="/labels" routerLinkActive="active" *ngIf="auth.authenticated">
+      <clr-icon shape="tags"></clr-icon>
+    </a>
+
+    <a href="" class="nav-link nav-icon" aria-label="logout" *ngIf="auth.authenticated">
+      <clr-icon shape="lock"></clr-icon>
+    </a>
+  </div>
+</header>
+
+<router-outlet></router-outlet>
+</div>
