@@ -8,7 +8,6 @@ use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::repo::Repository;
 use crate::auth::Authenticator;
-use rocket::Rocket;
 
 pub mod meta;
 pub mod repo;

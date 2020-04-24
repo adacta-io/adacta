@@ -1,8 +1,8 @@
-use rocket::{get, http::RawStr, http::Status, State};
+use rocket::{get, http::RawStr, State};
 use rocket_contrib::json::Json;
 use serde::Serialize;
 
-use crate::api::{ApiError, InternalError};
+use crate::api::ApiError;
 use crate::auth::Token;
 use crate::index::Index;
 use crate::model::DocId;
@@ -18,7 +18,7 @@ pub struct SearchResponse {
 pub(super) async fn search(query: &RawStr,
                            repo: State<'_, Repository>,
                            index: State<'_, Box<dyn Index + Send + Sync>>,
-                           token: &'_ Token) -> Result<Json<SearchResponse>, ApiError> {
+                           _token: &'_ Token) -> Result<Json<SearchResponse>, ApiError> {
     let response = index.search(query).await?;
 
     return Ok(Json(SearchResponse {

@@ -1,20 +1,12 @@
-use std::ops::Add;
-use std::time::{Duration, Instant, SystemTime};
-
 use rocket::{Data, post, Request, Responder, Response, State};
-use rocket::http::{Header, HeaderMap, RawStr, Status};
+use rocket::http::{Header, Status};
 use rocket::request::{FromRequest, Outcome};
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
-use anyhow::anyhow;
 
-use crate::api::{ApiError, InternalError};
+use crate::api::ApiError;
 use crate::auth::{Authenticator, Token};
-use crate::index::Index;
-use crate::model::DocId;
-use crate::repo::Repository;
-use rocket::response::ResponseBuilder;
 
 pub struct Authentication {}
 
@@ -27,7 +19,7 @@ impl Fairing for Authentication {
         };
     }
 
-    async fn on_request<'a>(&'a self, request: &'a mut Request<'_>, data: &'a Data) {
+    async fn on_request<'a>(&'a self, request: &'a mut Request<'_>, _data: &'a Data) {
         request.local_cache_async::<Option<Token>, _>(async {
             let auth = request.guard::<State<Authenticator>>().await.expect("No Authenticator");
 

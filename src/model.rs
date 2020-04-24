@@ -5,8 +5,6 @@ use anyhow::{Error, anyhow};
 use uuid::Uuid;
 use base58::{FromBase58, ToBase58};
 use serde::{Serialize, Serializer};
-use std::fmt::Display;
-use serde::export::Formatter;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct DocId(Uuid);
@@ -26,7 +24,7 @@ impl FromStr for DocId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let id = s.from_base58()
-            .map_err(|e| anyhow!("Invalid document ID"))?;
+            .map_err(|_| anyhow!("Invalid document ID"))?;
         let id = Uuid::from_slice(&id)?;
         return Ok(DocId(id));
     }

@@ -1,9 +1,9 @@
 use anyhow::Context;
-use rocket::{Data, http::Status, post, response::status::Custom, State};
+use rocket::{Data, post, State};
 use rocket_contrib::json::Json;
 use serde::Serialize;
 
-use crate::api::{ApiError, InternalError};
+use crate::api::ApiError;
 use crate::auth::Token;
 use crate::index::Index;
 use crate::juicer::Juicer;
@@ -21,7 +21,7 @@ pub(super) async fn upload_pdf(data: Data,
                                repo: State<'_, Repository>,
                                index: State<'_, Box<dyn Index + Send + Sync>>,
                                juicer: State<'_, Box<dyn Juicer + Send + Sync>>,
-                               token: &'_ Token) -> Result<Json<UploadResponse>, ApiError> {
+                               _token: &'_ Token) -> Result<Json<UploadResponse>, ApiError> {
     // Create a new staging area
     let staging = repo.stage().await?;
 

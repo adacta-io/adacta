@@ -1,19 +1,14 @@
-use anyhow::{Result, Error, anyhow};
 use bollard::{container, Docker};
-use bollard::container::{CreateContainerOptions, LogsOptions, StartContainerOptions, WaitContainerOptions, HostConfig};
+use bollard::container::{CreateContainerOptions, HostConfig, LogsOptions, StartContainerOptions, WaitContainerOptions};
+use bytes::Bytes;
+use tokio::stream::StreamExt;
 
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use maplit::hashmap;
 
 use crate::config::DockerJuicerConfig;
-use crate::repo::BundleStaging;
 use crate::model::Kind;
-
-use tokio::io::AsyncWriteExt;
-use tokio::stream::StreamExt;
-use bytes::Bytes;
-
-use std::collections::HashMap;
+use crate::repo::BundleStaging;
 
 pub struct Juicer {
     docker: Docker,
@@ -46,7 +41,7 @@ impl super::Juicer for Juicer {
             Some(CreateContainerOptions { name: name.clone() }),
             container::Config {
                 image: Some(self.image.clone()),
-                env: Some(vec![ format!("DID={}", bundle.id()) ]),
+                env: Some(vec![format!("DID={}", bundle.id())]),
                 network_disabled: Some(true),
                 host_config: Some(HostConfig {
                     binds: Some(vec![format!("{}:/juicer", bundle.path().display())]),

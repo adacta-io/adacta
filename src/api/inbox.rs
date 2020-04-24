@@ -1,8 +1,8 @@
-use rocket::{get, http::RawStr, http::Status, State};
+use rocket::{get, State};
 use rocket_contrib::json::Json;
 use serde::Serialize;
 
-use crate::api::{ApiError, InternalError};
+use crate::api::ApiError;
 use crate::auth::Token;
 use crate::index::Index;
 use crate::model::DocId;
@@ -17,7 +17,7 @@ pub struct InboxResponse {
 #[get("/inbox")]
 pub(super) async fn inbox(repo: State<'_, Repository>,
                           index: State<'_, Box<dyn Index + Send + Sync>>,
-                          token: &'_ Token) -> Result<Json<InboxResponse>, ApiError> {
+                          _token: &'_ Token) -> Result<Json<InboxResponse>, ApiError> {
     let response = index.inbox().await?;
 
     return Ok(Json(InboxResponse {

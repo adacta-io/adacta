@@ -42,7 +42,7 @@ pub(self) struct InternalError(pub Error);
 
 #[async_trait]
 impl <'r> Responder<'r> for InternalError {
-    async fn respond_to(self, request: &'r Request<'_>) -> Result<Response<'r>, Status> {
+    async fn respond_to(self, _request: &'r Request<'_>) -> Result<Response<'r>, Status> {
         return Response::build()
             .status(Status::InternalServerError)
             .sized_body(Cursor::new(format!("{:#?}", self.0))).await
