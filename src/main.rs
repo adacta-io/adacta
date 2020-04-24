@@ -8,6 +8,7 @@ use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::repo::Repository;
 use crate::auth::Authenticator;
+use rocket::Rocket;
 
 pub mod meta;
 pub mod repo;
@@ -39,6 +40,7 @@ async fn main() -> Result<()> {
         JuicerConfig::Docker(config) => Box::new(crate::juicer::docker::Juicer::from_config(config).await?),
     };
 
+    // Serve the HTTP Interface
     rocket::ignite()
         .attach(api::Authentication {})
         .manage(auth)

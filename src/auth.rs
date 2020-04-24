@@ -77,7 +77,8 @@ impl Authenticator {
 
     pub async fn login(&self, username: &str, password: &str) -> Option<Token> {
         let user = username == self.username.as_str();
-        let pass = pwhash::unix::verify(password.as_bytes(), &self.passhash);
+        let pass = bcrypt::verify(password.as_bytes(), &self.passhash)
+            .expect("Can not verify password");
 
         if !user || !pass {
             return None;

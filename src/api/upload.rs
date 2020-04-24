@@ -1,14 +1,15 @@
+use anyhow::Context;
 use rocket::{Data, http::Status, post, response::status::Custom, State};
 use rocket_contrib::json::Json;
 use serde::Serialize;
-use anyhow::Context;
 
+use crate::api::{ApiError, InternalError};
+use crate::auth::Token;
 use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::meta::Metadata;
 use crate::model::Kind;
 use crate::repo::Repository;
-use crate::api::{InternalError, ApiError};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct UploadResponse {
@@ -19,7 +20,8 @@ pub struct UploadResponse {
 pub(super) async fn upload_pdf(data: Data,
                                repo: State<'_, Repository>,
                                index: State<'_, Box<dyn Index + Send + Sync>>,
-                               juicer: State<'_, Box<dyn Juicer + Send + Sync>>) -> Result<Json<UploadResponse>, ApiError> {
+                               juicer: State<'_, Box<dyn Juicer + Send + Sync>>,
+                               token: &'_ Token) -> Result<Json<UploadResponse>, ApiError> {
     // Create a new staging area
     let staging = repo.stage().await?;
 

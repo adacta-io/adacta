@@ -8,6 +8,7 @@ use serde::Serialize;
 use tokio::io::AsyncRead;
 
 use crate::api::{ApiError, InternalError};
+use crate::auth::Token;
 use crate::model::{DocId, Kind};
 use crate::repo::Repository;
 
@@ -23,7 +24,8 @@ pub struct BundleResponse {
 
 #[get("/repo/<id>")]
 pub(super) async fn bundle(id: DocId,
-                           repo: State<'_, Repository>) -> Result<Json<BundleResponse>, ApiError> {
+                           repo: State<'_, Repository>,
+                           token: &'_ Token) -> Result<Json<BundleResponse>, ApiError> {
     let bundle = repo.get(id).await
         .ok_or_else(|| NotFound(format!("Bundle not found: {}", id)))?;
 
@@ -35,7 +37,8 @@ pub(super) async fn bundle(id: DocId,
 #[get("/repo/<id>/<fragment>")]
 pub(super) async fn fragment(id: DocId,
                              fragment: String,
-                             repo: State<'_, Repository>) -> Result<Content<Stream<impl AsyncRead>>, ApiError> {
+                             repo: State<'_, Repository>,
+                             token: &'_ Token) -> Result<Content<Stream<impl AsyncRead>>, ApiError> {
     let kind = match fragment.as_str() {
         "document" => Kind::Document,
         "preview" => Kind::Preview,
