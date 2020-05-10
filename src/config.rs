@@ -4,6 +4,7 @@ use anyhow::Result;
 use serde::Deserialize;
 use tokio::fs::OpenOptions;
 use tokio::io::AsyncReadExt;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AuthConfig {
@@ -11,6 +12,8 @@ pub struct AuthConfig {
     pub passhash: String,
 
     pub secret: String,
+
+    pub api_keys: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

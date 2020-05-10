@@ -8,7 +8,8 @@ edition = "2018"
 rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "async" }
 rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket", branch = "async" }
 uuid = { version = "0.8", features = ["v4"] }
-base58 = "0.1.0"
+base58 = "0.1"
+base64 = "0.12"
 anyhow = "1"
 thiserror = "1"
 chrono = { version = "0.4", features = ["serde"] }

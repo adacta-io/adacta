@@ -5,6 +5,7 @@ use jsonwebtoken::{DecodingKey, EncodingKey};
 use serde::{Serialize, Deserialize};
 
 use crate::config::AuthConfig;
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
@@ -30,15 +31,17 @@ pub struct Token {
 }
 
 pub struct Authenticator {
-    pub username: String,
-    pub passhash: String,
+    username: String,
+    passhash: String,
 
     // pub secret: String,
 
-    pub jwt_decoding_key: DecodingKey<'static>,
-    pub jwt_encoding_key: EncodingKey,
+    jwt_decoding_key: DecodingKey<'static>,
+    jwt_encoding_key: EncodingKey,
 
-    pub jwt_token_duration: Duration,
+    jwt_token_duration: Duration,
+
+    api_keys: HashMap<String, String>,
 }
 
 impl Authenticator {
@@ -54,6 +57,8 @@ impl Authenticator {
             jwt_encoding_key: EncodingKey::from_secret(config.secret.as_bytes()),
 
             jwt_token_duration: Duration::from_secs(60 * 60), // TODO: Make configurable
+
+            api_keys: config.api_keys,
         });
     }
 
@@ -87,5 +92,15 @@ impl Authenticator {
         return Some(Token {
             username: username.to_owned(),
         });
+    }
+
+    pub async fn verify_key(&self, username: &str, password: &str) -> Option<Token> {
+        if bcrypt::verify(password, self.api_keys.get(username)?).ok()? {
+            return Some(Token {
+                username: username.to_owned(),
+            });
+        } else {
+            return None;
+        }
     }
 }

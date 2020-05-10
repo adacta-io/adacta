@@ -1,20 +1,21 @@
-use rocket::{Data, post, Request, Responder, Response, State};
+use rocket::{Data, post, Request, Response, State};
+use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{Header, Status};
 use rocket::request::{FromRequest, Outcome};
-use rocket::fairing::{Fairing, Info, Kind};
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::api::ApiError;
 use crate::auth::{Authenticator, Token};
+use crate::utils::StrExt;
 
-pub struct Authentication {}
+pub struct Authorization {}
 
 #[async_trait::async_trait]
-impl Fairing for Authentication {
+impl Fairing for Authorization {
     fn info(&self) -> Info {
         return Info {
-            name: "Authentication",
+            name: "Authorization",
             kind: Kind::Request | Kind::Response
         };
     }
@@ -23,10 +24,28 @@ impl Fairing for Authentication {
         request.local_cache_async::<Option<Token>, _>(async {
             let auth = request.guard::<State<Authenticator>>().await.expect("No Authenticator");
 
-            let bearer = request.headers().get_one("Authentication")?;
-            let token = auth.verify_token(bearer).await.ok()?;
+            let header = request.headers().get_one("Authorization")?;
+            let (kind, payload) = header.split2(' ')?;
 
-            return Some(token);
+            match kind {
+                "Bearer" => {
+                    let token = auth.verify_token(payload).await.ok()?;
+                    return Some(token);
+                }
+
+                "Basic" => {
+                    let payload = base64::decode(payload).ok()?;
+                    let payload = String::from_utf8(payload).ok()?;
+
+                    let (username, password) = payload.split2(':')?;
+                    let token = auth.verify_key(username, password).await?;
+                    return Some(token);
+                }
+
+                _ => {
+                    return None;
+                }
+            }
         }).await;
     }
 
@@ -39,7 +58,7 @@ impl Fairing for Authentication {
             let auth = request.guard::<State<Authenticator>>().await.expect("No Authenticator");
 
             let bearer = auth.sign_token(token).await.expect("Can not sign token");
-            response.set_header(Header::new("Authentication", bearer));
+            response.set_header(Header::new("Authorization", bearer));
         }
     }
 }
@@ -65,31 +84,23 @@ pub struct AuthRequest {
 }
 
 #[derive(Debug, Serialize)]
-pub struct AuthDetails {
-    pub username: String,
-}
-
-#[derive(Responder, Debug)]
-#[response(status = 200, content_type = "json")]
 pub struct AuthResponse {
-    pub details: Json<AuthDetails>,
-    pub authentication: Header<'static>,
+    pub username: String,
+    pub token: String,
 }
 
 #[post("/auth", data = "<request>")]
 pub(super) async fn auth(auth: State<'_, Authenticator>,
-                         request: Json<AuthRequest>) -> Result<AuthResponse, ApiError> {
+                         request: Json<AuthRequest>) -> Result<Json<AuthResponse>, ApiError> {
     if let Some(token) = auth.login(&request.username, &request.password).await {
         let bearer = auth.sign_token(&token).await.expect("Can not sign token");
 
-        return Ok(AuthResponse {
-            details: Json(AuthDetails {
-                username: request.username.clone(),
-            }),
-            authentication: Header::new("Authentication", bearer)
-        });
+        return Ok(Json(AuthResponse {
+            username: request.username.clone(),
+            token: bearer,
+        }));
 
     } else {
-        return Err(ApiError::bad_request("Authentication failed".to_string()));
+        return Err(ApiError::bad_request("Authorization failed".to_string()));
     }
 }

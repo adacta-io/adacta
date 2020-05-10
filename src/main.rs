@@ -17,6 +17,7 @@ pub mod auth;
 pub mod model;
 pub mod config;
 pub mod juicer;
+pub mod utils;
 
 
 #[tokio::main]
@@ -41,7 +42,7 @@ async fn main() -> Result<()> {
 
     // Serve the HTTP Interface
     rocket::ignite()
-        .attach(api::Authentication {})
+        .attach(api::Authorization {})
         .manage(auth)
         .manage(repo)
         .manage(index)

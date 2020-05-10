@@ -5,7 +5,7 @@ use rocket::{http::RawStr, http::Status, Request, request::FromParam, Response, 
 use rocket::response::Responder;
 
 use async_trait::async_trait;
-pub use auth::Authentication;
+pub use auth::Authorization;
 
 use crate::model::DocId;
 
