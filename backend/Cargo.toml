@@ -2,9 +2,12 @@
 name = "adacta"
 version = "0.1.0"
 authors = ["Dustin Frisch <fooker@lab.sh>"]
+description = "Personal Document Archiving"
+
 edition = "2018"
 
 [dependencies]
+clap = "2"
 rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "async" }
 rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket", branch = "async" }
 uuid = { version = "0.8", features = ["v4"] }

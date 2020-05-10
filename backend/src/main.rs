@@ -2,12 +2,13 @@
 #![feature(decl_macro)]
 
 use anyhow::Result;
+use clap::{App, Arg};
 
+use crate::auth::Authenticator;
 use crate::config::{Config, IndexConfig, JuicerConfig};
 use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::repo::Repository;
-use crate::auth::Authenticator;
 
 pub mod meta;
 pub mod repo;
@@ -22,7 +23,21 @@ pub mod utils;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = Config::load("adacta.yaml").await?;
+    let matches = App::new("Adacta")
+        .version(env!("CARGO_PKG_VERSION"))
+        .name(env!("CARGO_PKG_NAME"))
+        .about(env!("CARGO_PKG_DESCRIPTION"))
+        .author(env!("CARGO_PKG_AUTHORS"))
+        .arg(Arg::with_name("config")
+            .short("c")
+            .long("config")
+            .value_name("FILE")
+            .help("Sets a custom config file")
+            .takes_value(true)
+            .default_value("config.yaml"))
+        .get_matches();
+
+    let config = Config::load(matches.value_of("config").expect("No config arg")).await?;
 
     // Create auth instance
     let auth = Authenticator::from_config(config.auth).await?;
@@ -30,7 +45,7 @@ async fn main() -> Result<()> {
     // Open repository
     let repo = Repository::from_config(config.repository).await?;
 
-    // Create indexier instance
+    // Connect to index
     let index: Box<dyn Index + Send + Sync> = match config.index {
         IndexConfig::Elasticsearch(config) => Box::new(crate::index::elasticsearch::Index::from_config(config).await?),
     };
