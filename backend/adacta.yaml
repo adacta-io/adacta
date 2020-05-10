@@ -1,0 +1,20 @@
+auth:
+  username: fooker
+  passhash: '$2b$10$I.7ycCDYlZQad5h4kKN1leUg3yPm2PyOUpUFgauuOnbgTtnz6LiU2' # test123
+
+  secret: jzhZX6cjPJ6dFrzyhTr5CfvlXrQ+L9TK
+
+  api_keys:
+    scanner: '$2b$10$pWRZIZUED2kMCQvLwJUT/ez3p0Sbz7tmq6Rs74x92.j5XigFZH5V2' # api123
+    mailfetch: '$2b$10$Z30R18ayj1Jnik0Xtm4mmut3RqIc2EsvDzdvqqoGBKcsqsRExryya' # api321
+
+repository:
+  path: /home/fooker/tmp/repo
+
+index:
+  type: elasticsearch
+  url: http://localhost:9200
+  index: docs
+
+juicer:
+  type: docker

@@ -1,0 +1,33 @@
+<div class="content-container">
+  <div class="content-area">
+    <div class="clr-row clr-justify-content-center clr-align-items-center">
+      <div class="clr-col-6 ">
+        <div class="card">
+          <div class="card-header">
+            Login
+          </div>
+          <div class="card-block">
+            <div class="card-text">
+              <form clrForm clrLayout="horizontal">
+                <clr-input-container>
+                  <label>Username</label>
+                  <input clrInput type="text" [(ngModel)]="username" name="Username" required placeholder="Username" />
+                </clr-input-container>
+                <clr-input-container>
+                  <label>Password</label>
+                  <input clrInput type="password" [(ngModel)]="password" name="Password" required placeholder="Password" />
+                </clr-input-container>
+              </form>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button type="submit" class="btn btn-primary" (click)="submit()">
+              <clr-icon shape="unlock"></clr-icon>
+              Log In
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
