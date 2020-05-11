@@ -1,0 +1,138 @@
+version: 2.1
+
+jobs:
+  checkout:
+    docker:
+      - image: circleci/circleci-cli
+    working_directory: ~/project
+    steps:
+      - checkout
+      - persist_to_workspace:
+          root: ~/project
+          paths: ./*
+
+  frontend_build:
+    docker:
+      - image: circleci/node:12
+    working_directory: ~/project/frontend
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - restore_cache:
+          name: "Restore Cache - Node Modules"
+          key: adacta-frontend-npm-{{ .Branch }}-{{ checksum "./package-lock.json" }}
+      - run:
+          name: "Install Node Modules"
+          command: |
+            npm install
+      - save_cache:
+          name: "Save Cache - Node Modules"
+          key: adacta-frontend-npm-{{ .Branch }}-{{ checksum "./package-lock.json" }}
+          paths:
+            - ./frontend/node_modules
+      - run:
+          name: "Build"
+          working_directory: ./frontend
+          command: |
+            npm run ng build --prod --aot
+      - persist_to_workspace:
+          root: ~/project
+          paths: ./frontend/dist/adacta/*
+
+  backend_check:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/backend
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - restore_cache:
+          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: "Check"
+          command: |
+            cargo check --all --all-targets
+
+  backend_clippy:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/backend
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - restore_cache:
+          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: "Clippy"
+          working_directory: ./backend
+          command: |
+            cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms
+  
+  backend_format:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/backend
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - restore_cache:
+          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: "Format"
+          working_directory: ./backend
+          command: |
+            cargo fmt --all -- --check
+
+  backend_build:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/backend
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Version information
+          command: |
+            rustup --version
+            rustc --version
+            cargo --version
+      - restore_cache:
+          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: "Build"
+          command: |
+            cargo build --release --all --all-targets
+      - save_cache:
+          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+          paths:
+            - /usr/local/cargo/registry
+            - ./target
+      - persist_to_workspace:
+          root: ~/project
+          paths: ./backend/target/release/adacta
+      - store_artifacts:
+          path: ~/project/backend/target/release/adacta
+          destination: ""
+
+
+workflows:
+  commit:
+    jobs:
+      - checkout
+      - frontend_build:
+          requires:
+            - checkout
+      - backend_build:
+          requires:
+            - checkout
+            - frontend_build
+      - backend_check:
+          requires:
+            - backend_build
+      - backend_clippy:
+          requires:
+            - backend_build
+      - backend_format:
+          requires:
+            - backend_build
+
