@@ -4,10 +4,11 @@ use rocket_contrib::json::Json;
 use serde::Serialize;
 use tokio::io::AsyncRead;
 
-use crate::api::{ApiError, InternalError};
 use crate::auth::Token;
 use crate::model::{DocId, Kind};
 use crate::repo::Repository;
+
+use super::{ApiError, InternalError};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct BundleResponse {

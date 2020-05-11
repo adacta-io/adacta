@@ -13,7 +13,7 @@ use crate::repo::Repository;
 pub mod meta;
 pub mod repo;
 pub mod index;
-pub mod api;
+pub mod web;
 pub mod auth;
 pub mod model;
 pub mod config;
@@ -56,15 +56,7 @@ async fn main() -> Result<()> {
     };
 
     // Serve the HTTP Interface
-    rocket::ignite()
-        .attach(api::Authorization {})
-        .manage(auth)
-        .manage(repo)
-        .manage(index)
-        .manage(juicer)
-        .mount("/api", api::routes())
-        .serve()
-        .await?;
+    web::serve(auth, repo, index, juicer).await?;
 
     return Ok(());
 }

@@ -3,13 +3,14 @@ use rocket::{Data, post, State};
 use rocket_contrib::json::Json;
 use serde::Serialize;
 
-use crate::api::ApiError;
 use crate::auth::Token;
 use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::meta::Metadata;
 use crate::model::Kind;
 use crate::repo::Repository;
+
+use super::ApiError;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct UploadResponse {

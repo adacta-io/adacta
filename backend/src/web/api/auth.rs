@@ -5,9 +5,10 @@ use rocket::request::{FromRequest, Outcome};
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
 
-use crate::api::ApiError;
 use crate::auth::{Authenticator, Token};
 use crate::utils::StrExt;
+
+use super::ApiError;
 
 pub struct Authorization {}
 
