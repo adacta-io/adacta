@@ -1,4 +1,4 @@
-Adacta is a personal document archiving system.
+![Adacta](./contrib/artwork/logo_small.svg) Adacta is a personal document archiving system.
 It allows to categorize and organize PDF documents for long-term archiving as needed in personal document management.  
 
 Its main features are a inbox concept allowing the user to review documents before archiving and a full-text search over all documents for easy retrial.
