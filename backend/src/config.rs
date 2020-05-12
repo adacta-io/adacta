@@ -1,13 +1,13 @@
+use std::collections::HashMap;
 use std::path::Path;
 
 use anyhow::Result;
 use serde::Deserialize;
 use tokio::fs::OpenOptions;
 use tokio::io::AsyncReadExt;
-use std::collections::HashMap;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct AuthConfig {
+pub struct Auth {
     pub username: String,
     pub passhash: String,
 
@@ -17,12 +17,12 @@ pub struct AuthConfig {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct RepositoryConfig {
+pub struct Repository {
     pub path: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct ElasticsearchIndexConfig {
+pub struct ElasticsearchIndex {
     pub url: String,
     pub index: String,
 }
@@ -30,34 +30,34 @@ pub struct ElasticsearchIndexConfig {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
-pub enum IndexConfig {
-    Elasticsearch(ElasticsearchIndexConfig),
+pub enum Index {
+    Elasticsearch(ElasticsearchIndex),
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct DockerJuicerConfig {
+pub struct DockerJuicer {
     pub image: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
-pub enum JuicerConfig {
-    Docker(DockerJuicerConfig),
+pub enum Juicer {
+    Docker(DockerJuicer),
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
-    pub auth: AuthConfig,
+    pub auth: Auth,
 
-    pub repository: RepositoryConfig,
+    pub repository: Repository,
 
-    pub index: IndexConfig,
-    pub juicer: JuicerConfig,
+    pub index: Index,
+    pub juicer: Juicer,
 }
 
 impl Config {
-    pub async fn load(path: impl AsRef<Path>) -> Result<Config> {
+    pub async fn load(path: impl AsRef<Path>) -> Result<Self> {
         let mut file = OpenOptions::new()
             .read(true)
             .open(path)

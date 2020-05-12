@@ -7,7 +7,7 @@ use tokio::io::{AsyncWrite, AsyncRead, AsyncReadExt};
 
 use crate::meta::Metadata;
 use crate::model::{DocId, Kind};
-use crate::config::RepositoryConfig;
+use crate::config::Repository as Config;
 
 trait Filename {
     fn filename(&self) -> OsString;
@@ -98,7 +98,7 @@ impl Bundle {
         let path = self.path.join(kind.filename());
 
         let metadata = tokio::fs::metadata(&path).await;
-        if !metadata.is_ok() {
+        if metadata.is_err() {
             return None;
         }
 
@@ -124,7 +124,7 @@ impl Bundle {
 }
 
 impl Repository {
-    pub async fn from_config(config: RepositoryConfig) -> Result<Self> {
+    pub async fn from_config(config: Config) -> Result<Self> {
         let path = PathBuf::from(config.path);
 
         // Create repository path if missing
@@ -158,7 +158,7 @@ impl Repository {
         let path = self.path.join(id.filename());
 
         let metadata = tokio::fs::metadata(&path).await;
-        if !metadata.is_ok() {
+        if metadata.is_err() {
             return None;
         }
 

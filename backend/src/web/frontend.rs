@@ -15,7 +15,7 @@ impl Into<Vec<Route>> for Frontend {
     fn into(self) -> Vec<Route> {
         return vec![
             Route::ranked(99, Method::Get, "/", self.clone()),
-            Route::ranked(99, Method::Get, "/<path..>", self.clone()),
+            Route::ranked(99, Method::Get, "/<path..>", self),
         ];
     }
 }
@@ -26,8 +26,8 @@ impl Handler for Frontend {
             // TODO: Im pretty sure this can be more readable...
             let (path, file) = request.get_segments::<PathBuf>(0)
                 .map(|path| path.expect("segments"))
-                .and_then(|path| Frontend::get(&path.to_string_lossy()).map(|file| (path, file)))
-                .unwrap_or_else(|| (PathBuf::from("index.html"), Frontend::get("index.html").expect("no index")));
+                .and_then(|path| Self::get(&path.to_string_lossy()).map(|file| (path, file)))
+                .unwrap_or_else(|| (PathBuf::from("index.html"), Self::get("index.html").expect("no index")));
 
             let mut response = Response::build()
                 .sized_body(Cursor::new(file)).await

@@ -26,7 +26,7 @@ impl FromStr for DocId {
         let id = s.from_base58()
             .map_err(|_| anyhow!("Invalid document ID"))?;
         let id = Uuid::from_slice(&id)?;
-        return Ok(DocId(id));
+        return Ok(Self(id));
     }
 }
 

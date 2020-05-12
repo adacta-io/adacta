@@ -1,11 +1,11 @@
+use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
 use anyhow::Result;
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::config::AuthConfig;
-use std::collections::HashMap;
+use crate::config::Auth;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
@@ -45,7 +45,7 @@ pub struct Authenticator {
 }
 
 impl Authenticator {
-    pub async fn from_config(config: AuthConfig) -> Result<Self> {
+    pub async fn from_config(config: Auth) -> Result<Self> {
         // TODO: Add some sanity checks (empty values, ...)
 
         return Ok(Self {
@@ -63,9 +63,11 @@ impl Authenticator {
     }
 
     pub async fn verify_token(&self, bearer: &str) -> Result<Token> {
-        let data = jsonwebtoken::decode::<Claims>(bearer,
-                                                  &self.jwt_decoding_key,
-                                                  &jsonwebtoken::Validation::default())?;
+        let data = jsonwebtoken::decode::<Claims>(
+            bearer,
+            &self.jwt_decoding_key,
+            &jsonwebtoken::Validation::default(),
+        )?;
 
         return Ok(Token {
             username: data.claims.sub,
@@ -73,9 +75,11 @@ impl Authenticator {
     }
 
     pub async fn sign_token(&self, token: &Token) -> Result<String> {
-        let bearer = jsonwebtoken::encode(&jsonwebtoken::Header::default(),
-                                          &Claims::new(token.username.to_owned(), self.jwt_token_duration),
-                                          &self.jwt_encoding_key)?;
+        let bearer = jsonwebtoken::encode(
+            &jsonwebtoken::Header::default(),
+            &Claims::new(token.username.to_owned(), self.jwt_token_duration),
+            &self.jwt_encoding_key,
+        )?;
 
         return Ok(bearer);
     }

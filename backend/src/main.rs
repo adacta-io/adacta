@@ -5,7 +5,7 @@ use anyhow::Result;
 use clap::{App, Arg};
 
 use crate::auth::Authenticator;
-use crate::config::{Config, IndexConfig, JuicerConfig};
+use crate::config::{Config, Index as IndexConfig, Juicer as JuicerConfig};
 use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::repo::Repository;

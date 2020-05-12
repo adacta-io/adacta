@@ -64,35 +64,35 @@ pub(self) enum ApiError {
 }
 
 impl ApiError {
-    pub fn not_found(s: String) -> Self {
+    pub const fn not_found(s: String) -> Self {
         return Self::NotFound(NotFound(s));
     }
 
-    pub fn bad_request(s: String) -> Self {
+    pub const fn bad_request(s: String) -> Self {
         return Self::BadRequest(BadRequest(Some(s)));
     }
 }
 
 impl From<NotFound<String>> for ApiError {
     fn from(r: NotFound<String>) -> Self {
-        return ApiError::NotFound(r);
+        return Self::NotFound(r);
     }
 }
 
 impl From<BadRequest<String>> for ApiError {
     fn from(r: BadRequest<String>) -> Self {
-        return ApiError::BadRequest(r);
+        return Self::BadRequest(r);
     }
 }
 
 impl From<InternalError> for ApiError {
     fn from(r: InternalError) -> Self {
-        return ApiError::InternalError(r);
+        return Self::InternalError(r);
     }
 }
 
 impl From<Error> for ApiError {
     fn from(err: Error) -> Self {
-        return ApiError::InternalError(err.into());
+        return Self::InternalError(err.into());
     }
 }

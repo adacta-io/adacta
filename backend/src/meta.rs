@@ -40,3 +40,9 @@ impl Metadata {
         return Ok(());
     }
 }
+
+impl Default for Metadata {
+    fn default() -> Self {
+        return Self::new();
+    }
+}

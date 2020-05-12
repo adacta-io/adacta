@@ -23,7 +23,7 @@ impl Fairing for Authorization {
 
     async fn on_request<'a>(&'a self, request: &'a mut Request<'_>, _data: &'a Data) {
         request.local_cache_async::<Option<Token>, _>(async {
-            let auth = request.guard::<State<Authenticator>>().await.expect("No Authenticator");
+            let auth = request.guard::<State<'_, Authenticator>>().await.expect("No Authenticator");
 
             let header = request.headers().get_one("Authorization")?;
             let (kind, payload) = header.split2(' ')?;
@@ -56,7 +56,7 @@ impl Fairing for Authorization {
         }).await;
 
         if let Some(token) = token {
-            let auth = request.guard::<State<Authenticator>>().await.expect("No Authenticator");
+            let auth = request.guard::<State<'_, Authenticator>>().await.expect("No Authenticator");
 
             let bearer = auth.sign_token(token).await.expect("Can not sign token");
             response.set_header(Header::new("Authorization", bearer));

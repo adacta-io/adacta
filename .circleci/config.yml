@@ -66,7 +66,10 @@ jobs:
           name: "Clippy"
           working_directory: ./backend
           command: |
-            cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms
+            cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms \
+              -A clippy::needless_return \
+              -A clippy::module_name_repetitions \
+              -A clippy::needless_lifetimes \
   
   backend_format:
     docker:

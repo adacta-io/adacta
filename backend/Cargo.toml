@@ -3,6 +3,11 @@ name = "adacta"
 version = "0.1.0"
 authors = ["Dustin Frisch <fooker@lab.sh>"]
 description = "Personal Document Archiving"
+repository = "https://github.com/adacta-io/adacta"
+license = "MIT"
+readme = "../README.md"
+keywords = ["pdf", "documents", "archive", "search"]
+categories = ["application"]
 
 edition = "2018"
 

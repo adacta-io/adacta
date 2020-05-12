@@ -6,7 +6,7 @@ use tokio::stream::StreamExt;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 
-use crate::config::DockerJuicerConfig;
+use crate::config::DockerJuicer;
 use crate::model::Kind;
 use crate::repo::BundleStaging;
 
@@ -19,7 +19,7 @@ pub struct Juicer {
 impl Juicer {
     const DOCKER_IMAGE: &'static str = "adacta10/juicer";
 
-    pub async fn from_config(config: DockerJuicerConfig) -> Result<Self> {
+    pub async fn from_config(config: DockerJuicer) -> Result<Self> {
         let docker = Docker::connect_with_local_defaults()?;
 //        docker.ping().await?; // TODO: Implement?
 
@@ -45,9 +45,9 @@ impl super::Juicer for Juicer {
                 network_disabled: Some(true),
                 host_config: Some(HostConfig {
                     binds: Some(vec![format!("{}:/juicer", bundle.path().display())]),
-                    ..Default::default()
+                    ..HostConfig::default()
                 }),
-                ..Default::default()
+                ..container::Config::default()
             },
         ).await?;
 
@@ -62,7 +62,7 @@ impl super::Juicer for Juicer {
                 stderr: true,
                 tail: String::from("all"),
                 follow: true,
-                ..Default::default()
+                ..LogsOptions::default()
             }))
             .map(|v| match v {
                 Ok(out) => Ok(Bytes::from(format!("{}", out))),
@@ -78,7 +78,7 @@ impl super::Juicer for Juicer {
         logs.await?;
 
         if result.status_code != 0 {
-            return Err(anyhow!("Error while juicing: {}", result.error.map(|err| err.message).unwrap_or_else(|| String::from("unknown"))));
+            return Err(anyhow!("Error while juicing: {}", result.error.map_or_else(|| String::from("unknown"), |err| err.message)));
         }
 
         return Ok(());

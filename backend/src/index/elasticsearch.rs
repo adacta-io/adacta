@@ -10,12 +10,12 @@ use serde_json::{json, value::{RawValue, Value}};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 
-use crate::config::ElasticsearchIndexConfig;
+use crate::config::ElasticsearchIndex as Config;
 use crate::index::SearchResponse;
 use crate::model::DocId;
 use crate::repo::Bundle;
 
-const DOCUMENT_TYPE: &'static str = "document";
+const DOCUMENT_TYPE: &str = "document";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Source {
@@ -33,7 +33,7 @@ pub struct Index {
 }
 
 impl Index {
-    pub async fn from_config(config: ElasticsearchIndexConfig) -> Result<Self> {
+    pub async fn from_config(config: Config) -> Result<Self> {
         return Self::connect(config.url, config.index).await;
     }
 
@@ -69,7 +69,7 @@ impl Index {
         let count = response["hits"]["total"]["value"].as_u64().expect("no usize");
 
         let docs = response["hits"]["hits"].as_array().expect("no array")
-            .into_iter()
+            .iter()
             .map(|hit| hit["_id"].as_str().expect("no atr"))
             .map(DocId::from_str)
             .collect::<Result<Vec<_>>>()?;

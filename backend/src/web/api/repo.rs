@@ -24,7 +24,7 @@ pub struct BundleResponse {
 pub(super) async fn bundle(id: DocId,
                            repo: State<'_, Repository>,
                            _token: &'_ Token) -> Result<Json<BundleResponse>, ApiError> {
-    let bundle = repo.get(id).await
+    let _bundle = repo.get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
     return Ok(Json(BundleResponse {
@@ -43,7 +43,7 @@ pub(super) async fn fragment(id: DocId,
         "plaintext" => Kind::Plaintext,
         "metadata" => Kind::Metadata,
         "process_log" => Kind::ProcessLog,
-        s @ _ => Kind::other(s),
+        s => Kind::other(s),
     };
 
     let bundle = repo.get(id).await
@@ -61,7 +61,7 @@ pub(super) async fn fragment(id: DocId,
         Kind::Plaintext => ContentType::Plain,
         Kind::Metadata => ContentType::JSON,
         Kind::ProcessLog => ContentType::Plain,
-        Kind::Other { name: _ } => ContentType::Any,
+        Kind::Other { .. } => ContentType::Any,
     };
 
     return Ok(Content(content_type, file.into()));
