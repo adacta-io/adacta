@@ -17,11 +17,11 @@ pub struct Juicer {
 }
 
 impl Juicer {
-    const DOCKER_IMAGE: &'static str = "adacta/juicer";
+    const DOCKER_IMAGE: &'static str = "adacta10/juicer";
 
     pub async fn from_config(config: DockerJuicerConfig) -> Result<Self> {
         let docker = Docker::connect_with_local_defaults()?;
-//        docker.ping().await?;
+//        docker.ping().await?; // TODO: Implement?
 
         let image = config.image.unwrap_or_else(|| Self::DOCKER_IMAGE.to_string());
 

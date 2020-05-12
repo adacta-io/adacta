@@ -20,4 +20,4 @@ else
 fi
 
 # Extract preview
-convert -thumbnail x1024 'document.pdf[0]' 'preview.png'
+pdftoppm 'document.pdf' 'preview.png' -png -f 1 -singlefile
