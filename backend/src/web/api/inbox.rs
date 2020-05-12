@@ -16,9 +16,12 @@ pub struct InboxResponse {
 }
 
 #[get("/inbox")]
-pub(super) async fn inbox(_repo: State<'_, Repository>,
-                          index: State<'_, Box<dyn Index + Send + Sync>>,
-                          _token: &'_ Token) -> Result<Json<InboxResponse>, ApiError> {
+pub(super) async fn inbox(
+    _repo: State<'_, Repository>,
+    index: State<'_, Box<dyn Index + Send + Sync>>,
+    _token: &'_ Token,
+) -> Result<Json<InboxResponse>, ApiError>
+{
     let response = index.inbox().await?;
 
     return Ok(Json(InboxResponse {

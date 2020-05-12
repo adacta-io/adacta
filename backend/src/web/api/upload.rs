@@ -1,5 +1,5 @@
 use anyhow::Context;
-use rocket::{Data, post, State};
+use rocket::{post, Data, State};
 use rocket_contrib::json::Json;
 use serde::Serialize;
 
@@ -18,17 +18,21 @@ pub struct UploadResponse {
 }
 
 #[post("/upload", format = "application/pdf", data = "<data>")]
-pub(super) async fn upload_pdf(data: Data,
-                               repo: State<'_, Repository>,
-                               index: State<'_, Box<dyn Index + Send + Sync>>,
-                               juicer: State<'_, Box<dyn Juicer + Send + Sync>>,
-                               _token: &'_ Token) -> Result<Json<UploadResponse>, ApiError> {
+pub(super) async fn upload_pdf(
+    data: Data,
+    repo: State<'_, Repository>,
+    index: State<'_, Box<dyn Index + Send + Sync>>,
+    juicer: State<'_, Box<dyn Juicer + Send + Sync>>,
+    _token: &'_ Token,
+) -> Result<Json<UploadResponse>, ApiError>
+{
     // Create a new staging area
     let staging = repo.stage().await?;
 
     // Write the uploaded file to the staging area
     let original_fragment = staging.write(Kind::other("original.pdf")).await?;
-    data.stream_to(original_fragment).await
+    data.stream_to(original_fragment)
+        .await
         .context("Writing original.pdf to staging")?;
 
     // Create initial metadata file for the uploaded bundle

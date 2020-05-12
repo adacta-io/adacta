@@ -58,10 +58,7 @@ pub struct Config {
 
 impl Config {
     pub async fn load(path: impl AsRef<Path>) -> Result<Self> {
-        let mut file = OpenOptions::new()
-            .read(true)
-            .open(path)
-            .await?;
+        let mut file = OpenOptions::new().read(true).open(path).await?;
 
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).await?;

@@ -16,10 +16,13 @@ pub struct SearchResponse {
 }
 
 #[get("/search?<query>")]
-pub(super) async fn search(query: &RawStr,
-                           _repo: State<'_, Repository>,
-                           index: State<'_, Box<dyn Index + Send + Sync>>,
-                           _token: &'_ Token) -> Result<Json<SearchResponse>, ApiError> {
+pub(super) async fn search(
+    query: &RawStr,
+    _repo: State<'_, Repository>,
+    index: State<'_, Box<dyn Index + Send + Sync>>,
+    _token: &'_ Token,
+) -> Result<Json<SearchResponse>, ApiError>
+{
     let response = index.search(query).await?;
 
     return Ok(Json(SearchResponse {

@@ -3,11 +3,11 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use tokio::fs::OpenOptions;
-use tokio::io::{AsyncWrite, AsyncRead, AsyncReadExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite};
 
+use crate::config::Repository as Config;
 use crate::meta::Metadata;
 use crate::model::{DocId, Kind};
-use crate::config::Repository as Config;
 
 trait Filename {
     fn filename(&self) -> OsString;
@@ -44,29 +44,20 @@ impl Filename for Kind {
 }
 
 impl Filename for DocId {
-    fn filename(&self) -> OsString {
-        return self.to_string().into();
-    }
+    fn filename(&self) -> OsString { return self.to_string().into(); }
 }
 
 impl Fragment {
-    pub fn kind(&self) -> &Kind {
-        return &self.kind;
-    }
+    pub fn kind(&self) -> &Kind { return &self.kind; }
 
-    pub fn path(&self) -> &Path {
-        return self.path.as_path();
-    }
+    pub fn path(&self) -> &Path { return self.path.as_path(); }
 
-//    pub async fn exists(&self) -> bool {
-//        return self.path.exists().await;
-//    }
+    //    pub async fn exists(&self) -> bool {
+    //        return self.path.exists().await;
+    //    }
 
     pub async fn read(&self) -> Result<impl AsyncRead> {
-        let file = OpenOptions::new()
-            .read(true)
-            .open(&self.path)
-            .await?;
+        let file = OpenOptions::new().read(true).open(&self.path).await?;
 
         return Ok(file);
     }
@@ -82,17 +73,13 @@ impl Fragment {
 }
 
 impl Bundle {
-    pub fn id(&self) -> &DocId {
-        return &self.id;
-    }
+    pub fn id(&self) -> &DocId { return &self.id; }
 
-    pub fn path(&self) -> &Path {
-        return self.path.as_path();
-    }
+    pub fn path(&self) -> &Path { return self.path.as_path(); }
 
-//    pub async fn exists(&self) -> bool {
-//        return self.path.exists().await;
-//    }
+    //    pub async fn exists(&self) -> bool {
+    //        return self.path.exists().await;
+    //    }
 
     pub async fn fragment(&self, kind: Kind) -> Option<Fragment> {
         let path = self.path.join(kind.filename());
@@ -102,10 +89,7 @@ impl Bundle {
             return None;
         }
 
-        return Some(Fragment {
-            kind,
-            path,
-        });
+        return Some(Fragment { kind, path });
     }
 
     pub async fn plaintext(&self) -> Option<Result<String>> {
@@ -130,29 +114,25 @@ impl Repository {
         // Create repository path if missing
         tokio::fs::create_dir_all(&path).await?;
 
-        return Ok(Self {
-            path,
-        });
+        return Ok(Self { path });
     }
 
-    pub fn path(&self) -> &Path {
-        return self.path.as_path();
-    }
+    pub fn path(&self) -> &Path { return self.path.as_path(); }
 
-//    pub fn list(&self) -> Result<Vec<Bundle>> {
-//        return std::fs::read_dir(&self.path)?
-//            .map(|entry| {
-//                let entry = entry?;
-//
-//                let id = entry.file_name().to_string_lossy().parse()?;
-//
-//                return Ok(Bundle {
-//                    id,
-//                    path: entry.path(),
-//                });
-//            })
-//            .collect();
-//    }
+    //    pub fn list(&self) -> Result<Vec<Bundle>> {
+    //        return std::fs::read_dir(&self.path)?
+    //            .map(|entry| {
+    //                let entry = entry?;
+    //
+    //                let id = entry.file_name().to_string_lossy().parse()?;
+    //
+    //                return Ok(Bundle {
+    //                    id,
+    //                    path: entry.path(),
+    //                });
+    //            })
+    //            .collect();
+    //    }
 
     pub async fn get(&self, id: DocId) -> Option<Bundle> {
         let path = self.path.join(id.filename());
@@ -162,10 +142,7 @@ impl Repository {
             return None;
         }
 
-        return Some(Bundle {
-            id,
-            path,
-        });
+        return Some(Bundle { id, path });
     }
 
     pub async fn stage(&self) -> Result<BundleStaging> {
@@ -174,10 +151,7 @@ impl Repository {
 
         tokio::fs::create_dir_all(&path).await?;
 
-        return Ok(BundleStaging {
-            id,
-            path,
-        });
+        return Ok(BundleStaging { id, path });
     }
 }
 
@@ -187,9 +161,7 @@ pub struct BundleStaging {
 }
 
 impl BundleStaging {
-    pub fn id(&self) -> DocId {
-        return self.id;
-    }
+    pub fn id(&self) -> DocId { return self.id; }
 
     pub async fn create(self, repo: &Repository) -> Result<Bundle> {
         let target_path = repo.path.join(self.id.filename());
@@ -215,7 +187,5 @@ impl BundleStaging {
         return Ok(file);
     }
 
-    pub fn path(&self) -> &Path {
-        return &self.path;
-    }
+    pub fn path(&self) -> &Path { return &self.path; }
 }

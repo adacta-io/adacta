@@ -19,4 +19,3 @@ pub trait Index {
     async fn search(&self, query: &str) -> Result<SearchResponse>;
     async fn inbox(&self) -> Result<SearchResponse>;
 }
-

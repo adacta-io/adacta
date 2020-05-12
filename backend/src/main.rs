@@ -10,16 +10,15 @@ use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::repo::Repository;
 
-pub mod meta;
-pub mod repo;
-pub mod index;
-pub mod web;
 pub mod auth;
-pub mod model;
 pub mod config;
+pub mod index;
 pub mod juicer;
+pub mod meta;
+pub mod model;
+pub mod repo;
 pub mod utils;
-
+pub mod web;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -28,13 +27,15 @@ async fn main() -> Result<()> {
         .name(env!("CARGO_PKG_NAME"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .author(env!("CARGO_PKG_AUTHORS"))
-        .arg(Arg::with_name("config")
-            .short("c")
-            .long("config")
-            .value_name("FILE")
-            .help("Sets a custom config file")
-            .takes_value(true)
-            .default_value("config.yaml"))
+        .arg(
+            Arg::with_name("config")
+                .short("c")
+                .long("config")
+                .value_name("FILE")
+                .help("Sets a custom config file")
+                .takes_value(true)
+                .default_value("config.yaml"),
+        )
         .get_matches();
 
     let config = Config::load(matches.value_of("config").expect("No config arg")).await?;
@@ -47,12 +48,16 @@ async fn main() -> Result<()> {
 
     // Connect to index
     let index: Box<dyn Index + Send + Sync> = match config.index {
-        IndexConfig::Elasticsearch(config) => Box::new(crate::index::elasticsearch::Index::from_config(config).await?),
+        IndexConfig::Elasticsearch(config) => {
+            Box::new(crate::index::elasticsearch::Index::from_config(config).await?)
+        }
     };
 
     // Create juicer instance
     let juicer: Box<dyn Juicer + Send + Sync> = match config.juicer {
-        JuicerConfig::Docker(config) => Box::new(crate::juicer::docker::Juicer::from_config(config).await?),
+        JuicerConfig::Docker(config) => {
+            Box::new(crate::juicer::docker::Juicer::from_config(config).await?)
+        }
     };
 
     // Serve the HTTP Interface

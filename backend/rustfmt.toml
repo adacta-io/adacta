@@ -1,0 +1,10 @@
+edition = "2018"
+version = "Two"
+
+brace_style = "PreferSameLine"
+condense_wildcard_suffixes = true
+fn_single_line = true
+imports_layout = "Horizontal"
+reorder_impl_items = true
+use_field_init_shorthand = true
+where_single_line = true

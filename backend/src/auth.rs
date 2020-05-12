@@ -34,7 +34,7 @@ pub struct Authenticator {
     username: String,
     passhash: String,
 
-    // pub secret: String,
+    secret: String,
 
     jwt_decoding_key: DecodingKey<'static>,
     jwt_encoding_key: EncodingKey,
@@ -51,7 +51,8 @@ impl Authenticator {
         return Ok(Self {
             username: config.username,
             passhash: config.passhash,
-            // secret: config.secret,
+
+            secret: config.secret.clone(),
 
             jwt_decoding_key: DecodingKey::from_secret(config.secret.as_bytes()).into_static(),
             jwt_encoding_key: EncodingKey::from_secret(config.secret.as_bytes()),
@@ -85,9 +86,10 @@ impl Authenticator {
     }
 
     pub async fn login(&self, username: &str, password: &str) -> Option<Token> {
+        // TODO: Verify passhash is valid on config load
+
         let user = username == self.username.as_str();
-        let pass = bcrypt::verify(password.as_bytes(), &self.passhash)
-            .expect("Can not verify password");
+        let pass = bcrypt::verify(password.as_bytes(), &self.passhash).ok()?;
 
         if !user || !pass {
             return None;

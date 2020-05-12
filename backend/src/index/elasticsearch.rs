@@ -2,10 +2,11 @@ use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
-use elasticsearch::{Elasticsearch, IndexParts, SearchParts};
 use elasticsearch::http::transport::Transport;
+use elasticsearch::{Elasticsearch, IndexParts, SearchParts};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, value::{RawValue, Value}};
+use serde_json::json;
+use serde_json::value::{RawValue, Value};
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
@@ -37,17 +38,13 @@ impl Index {
         return Self::connect(config.url, config.index).await;
     }
 
-    pub async fn connect(url: String,
-                         index: String) -> Result<Self> {
+    pub async fn connect(url: String, index: String) -> Result<Self> {
         let transport = Transport::single_node(&url)?;
         let client = Elasticsearch::new(transport);
 
         client.ping().send().await?;
 
-        return Ok(Self {
-            client,
-            index,
-        });
+        return Ok(Self { client, index });
     }
 
     async fn query(&self, mut query: Value) -> Result<SearchResponse> {
@@ -55,29 +52,35 @@ impl Index {
         query["track_total_hits"] = true.into();
 
         // Execute the query
-        let response = self.client.search(SearchParts::IndexType(&[&self.index], &[DOCUMENT_TYPE]))
+        let response = self
+            .client
+            .search(SearchParts::IndexType(&[&self.index], &[DOCUMENT_TYPE]))
             .body(query)
             .send()
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(anyhow!("ElasticSearch Query error: {}", response.read_body::<Box<RawValue>>().await?));
+            return Err(anyhow!(
+                "ElasticSearch Query error: {}",
+                response.read_body::<Box<RawValue>>().await?
+            ));
         }
 
         let response = response.read_body::<Value>().await?;
 
-        let count = response["hits"]["total"]["value"].as_u64().expect("no usize");
+        let count = response["hits"]["total"]["value"]
+            .as_u64()
+            .expect("no usize");
 
-        let docs = response["hits"]["hits"].as_array().expect("no array")
+        let docs = response["hits"]["hits"]
+            .as_array()
+            .expect("no array")
             .iter()
             .map(|hit| hit["_id"].as_str().expect("no atr"))
             .map(DocId::from_str)
             .collect::<Result<Vec<_>>>()?;
 
-        return Ok(SearchResponse {
-            count,
-            docs,
-        });
+        return Ok(SearchResponse { count, docs });
     }
 }
 
@@ -86,12 +89,19 @@ impl super::Index for Index {
     async fn index(&self, bundle: &Bundle) -> Result<()> {
         let id = bundle.id().to_string();
 
-        let text = bundle.plaintext().await.transpose()?
+        let text = bundle
+            .plaintext()
+            .await
+            .transpose()?
             .ok_or_else(|| anyhow!("Bundle does not contain plaintext"))?;
-        let meta = bundle.metadata().await.transpose()?
+        let meta = bundle
+            .metadata()
+            .await
+            .transpose()?
             .ok_or_else(|| anyhow!("Bundle does not contain meta-data"))?;
 
-        self.client.index(IndexParts::IndexTypeId(&self.index, DOCUMENT_TYPE, &id))
+        self.client
+            .index(IndexParts::IndexTypeId(&self.index, DOCUMENT_TYPE, &id))
             .body(Source {
                 text,
                 uploaded: meta.uploaded,
@@ -106,30 +116,34 @@ impl super::Index for Index {
     }
 
     async fn search(&self, query: &str) -> Result<SearchResponse> {
-        return self.query(json!({
-            "query": {
-                "bool" : {
-                    "must" : {
-                        "simple_query_string" : {
-                            "query" : query
+        return self
+            .query(json!({
+                "query": {
+                    "bool" : {
+                        "must" : {
+                            "simple_query_string" : {
+                                "query" : query
+                            }
                         }
                     }
                 }
-            }
-        })).await;
+            }))
+            .await;
     }
 
     async fn inbox(&self) -> Result<SearchResponse> {
-        return self.query(json!({
-            "query": {
-                "bool": {
-                    "must_not": {
-                        "exists": {
-                            "field": "archived"
+        return self
+            .query(json!({
+                "query": {
+                    "bool": {
+                        "must_not": {
+                            "exists": {
+                                "field": "archived"
+                            }
                         }
                     }
                 }
-            }
-        })).await;
+            }))
+            .await;
     }
 }

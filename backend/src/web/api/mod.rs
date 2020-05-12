@@ -1,8 +1,10 @@
 use std::io::Cursor;
 
 use anyhow::Error;
-use rocket::{http::RawStr, http::Status, Request, request::FromParam, Response, response::status::{BadRequest, NotFound}, Route, routes};
 use rocket::response::Responder;
+use rocket::{
+    http::RawStr, http::Status, request::FromParam, response::status::{BadRequest, NotFound}, routes, Request, Response, Route
+};
 
 use async_trait::async_trait;
 pub use auth::Authorization;
@@ -10,21 +12,18 @@ pub use auth::Authorization;
 use crate::model::DocId;
 
 mod auth;
+mod inbox;
 mod repo;
 mod search;
-mod inbox;
 mod upload;
 
 pub fn routes() -> Vec<Route> {
     return routes![
         auth::auth,
-
         repo::bundle,
         repo::fragment,
-
         search::search,
         inbox::inbox,
-
         upload::upload_pdf,
     ];
 }
@@ -32,28 +31,25 @@ pub fn routes() -> Vec<Route> {
 impl FromParam<'_> for DocId {
     type Error = Error;
 
-    fn from_param(param: &'_ RawStr) -> Result<Self, Self::Error> {
-        return Ok(param.parse()?);
-    }
+    fn from_param(param: &'_ RawStr) -> Result<Self, Self::Error> { return Ok(param.parse()?); }
 }
 
 #[derive(Debug)]
 pub(self) struct InternalError(pub Error);
 
 #[async_trait]
-impl <'r> Responder<'r> for InternalError {
+impl<'r> Responder<'r> for InternalError {
     async fn respond_to(self, _request: &'r Request<'_>) -> Result<Response<'r>, Status> {
         return Response::build()
             .status(Status::InternalServerError)
-            .sized_body(Cursor::new(format!("{:#?}", self.0))).await
+            .sized_body(Cursor::new(format!("{:#?}", self.0)))
+            .await
             .ok();
     }
 }
 
 impl From<Error> for InternalError {
-    fn from(err: Error) -> Self {
-        return Self(err);
-    }
+    fn from(err: Error) -> Self { return Self(err); }
 }
 
 #[derive(Debug, Responder)]
@@ -64,35 +60,23 @@ pub(self) enum ApiError {
 }
 
 impl ApiError {
-    pub const fn not_found(s: String) -> Self {
-        return Self::NotFound(NotFound(s));
-    }
+    pub const fn not_found(s: String) -> Self { return Self::NotFound(NotFound(s)); }
 
-    pub const fn bad_request(s: String) -> Self {
-        return Self::BadRequest(BadRequest(Some(s)));
-    }
+    pub const fn bad_request(s: String) -> Self { return Self::BadRequest(BadRequest(Some(s))); }
 }
 
 impl From<NotFound<String>> for ApiError {
-    fn from(r: NotFound<String>) -> Self {
-        return Self::NotFound(r);
-    }
+    fn from(r: NotFound<String>) -> Self { return Self::NotFound(r); }
 }
 
 impl From<BadRequest<String>> for ApiError {
-    fn from(r: BadRequest<String>) -> Self {
-        return Self::BadRequest(r);
-    }
+    fn from(r: BadRequest<String>) -> Self { return Self::BadRequest(r); }
 }
 
 impl From<InternalError> for ApiError {
-    fn from(r: InternalError) -> Self {
-        return Self::InternalError(r);
-    }
+    fn from(r: InternalError) -> Self { return Self::InternalError(r); }
 }
 
 impl From<Error> for ApiError {
-    fn from(err: Error) -> Self {
-        return Self::InternalError(err.into());
-    }
+    fn from(err: Error) -> Self { return Self::InternalError(err.into()); }
 }
