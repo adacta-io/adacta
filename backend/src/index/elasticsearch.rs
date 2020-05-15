@@ -13,8 +13,8 @@ use async_trait::async_trait;
 
 use crate::config::ElasticsearchIndex as Config;
 use crate::index::SearchResponse;
-use crate::model::DocId;
-use crate::repo::Bundle;
+use crate::model::{DocId, Label};
+use crate::repo::{Bundle, FragmentContainer};
 
 const DOCUMENT_TYPE: &str = "document";
 
@@ -23,7 +23,7 @@ struct Source {
     text: String,
     uploaded: DateTime<Utc>,
     archived: Option<DateTime<Utc>>,
-    tags: HashSet<String>,
+    labels: HashSet<Label>,
     properties: HashMap<String, String>,
 }
 
@@ -106,7 +106,7 @@ impl super::Index for Index {
                 text,
                 uploaded: meta.uploaded,
                 archived: meta.archived,
-                tags: meta.tags,
+                labels: meta.labels,
                 properties: meta.properties,
             })
             .send()

@@ -5,12 +5,14 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
+use crate::model::Label;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Metadata {
     pub uploaded: DateTime<Utc>,
     pub archived: Option<DateTime<Utc>>,
 
-    pub tags: HashSet<String>,
+    pub labels: HashSet<Label>,
 
     pub properties: HashMap<String, String>,
 }
@@ -20,7 +22,7 @@ impl Metadata {
         return Self {
             uploaded: Utc::now(),
             archived: None,
-            tags: HashSet::new(),
+            labels: HashSet::new(),
             properties: HashMap::new(),
         };
     }

@@ -7,6 +7,25 @@ use tokio::fs::OpenOptions;
 use tokio::io::AsyncReadExt;
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct DumbPigeonhole {
+    pub path: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BayesicPigeonhole {
+    pub path: String,
+    pub certainty: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type")]
+#[serde(rename_all = "lowercase")]
+pub enum Pigeonhole {
+    Dumb(DumbPigeonhole),
+    Bayesic(BayesicPigeonhole),
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct Auth {
     pub username: String,
     pub passhash: String,
@@ -54,6 +73,7 @@ pub struct Config {
 
     pub index: Index,
     pub juicer: Juicer,
+    pub pigeonhole: Pigeonhole,
 }
 
 impl Config {

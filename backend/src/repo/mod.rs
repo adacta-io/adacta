@@ -5,6 +5,8 @@ use anyhow::Result;
 use tokio::fs::OpenOptions;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite};
 
+use async_trait::async_trait;
+
 use crate::config::Repository as Config;
 use crate::meta::Metadata;
 use crate::model::{DocId, Kind};
@@ -72,17 +74,14 @@ impl Fragment {
     }
 }
 
-impl Bundle {
-    pub fn id(&self) -> &DocId { return &self.id; }
+#[async_trait]
+pub trait FragmentContainer {
+    fn id(&self) -> &DocId;
 
-    pub fn path(&self) -> &Path { return self.path.as_path(); }
+    fn path(&self) -> &Path;
 
-    //    pub async fn exists(&self) -> bool {
-    //        return self.path.exists().await;
-    //    }
-
-    pub async fn fragment(&self, kind: Kind) -> Option<Fragment> {
-        let path = self.path.join(kind.filename());
+    async fn fragment(&self, kind: Kind) -> Option<Fragment> {
+        let path = self.path().join(kind.filename());
 
         let metadata = tokio::fs::metadata(&path).await;
         if metadata.is_err() {
@@ -92,12 +91,12 @@ impl Bundle {
         return Some(Fragment { kind, path });
     }
 
-    pub async fn plaintext(&self) -> Option<Result<String>> {
+    async fn plaintext(&self) -> Option<Result<String>> {
         let fragment = self.fragment(Kind::Plaintext).await?;
         return Some(fragment.read_all().await);
     }
 
-    pub async fn metadata(&self) -> Option<Result<Metadata>> {
+    async fn metadata(&self) -> Option<Result<Metadata>> {
         let fragment = self.fragment(Kind::Metadata).await?;
 
         return match fragment.read().await {
@@ -105,6 +104,13 @@ impl Bundle {
             Err(err) => Some(Err(err)),
         };
     }
+}
+
+#[async_trait]
+impl FragmentContainer for Bundle {
+    fn id(&self) -> &DocId { return &self.id; }
+
+    fn path(&self) -> &Path { return self.path.as_path(); }
 }
 
 impl Repository {
@@ -160,9 +166,14 @@ pub struct BundleStaging {
     path: PathBuf,
 }
 
-impl BundleStaging {
-    pub fn id(&self) -> DocId { return self.id; }
+#[async_trait]
+impl FragmentContainer for BundleStaging {
+    fn id(&self) -> &DocId { return &self.id; }
 
+    fn path(&self) -> &Path { return self.path.as_path(); }
+}
+
+impl BundleStaging {
     pub async fn create(self, repo: &Repository) -> Result<Bundle> {
         let target_path = repo.path.join(self.id.filename());
 
@@ -186,6 +197,4 @@ impl BundleStaging {
 
         return Ok(file);
     }
-
-    pub fn path(&self) -> &Path { return &self.path; }
 }

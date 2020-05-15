@@ -6,7 +6,7 @@ use tokio::io::AsyncRead;
 
 use crate::auth::Token;
 use crate::model::{DocId, Kind};
-use crate::repo::Repository;
+use crate::repo::{FragmentContainer, Repository};
 
 use super::{ApiError, InternalError};
 

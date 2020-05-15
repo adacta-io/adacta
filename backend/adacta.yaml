@@ -18,3 +18,8 @@ index:
 
 juicer:
   type: docker
+
+pigeonhole:
+  type: bayesic
+  path: /home/fooker/tmp/bayesic
+  certainty: 0.1

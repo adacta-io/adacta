@@ -8,9 +8,10 @@ use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::meta::Metadata;
 use crate::model::Kind;
-use crate::repo::Repository;
+use crate::repo::{FragmentContainer, Repository};
 
 use super::ApiError;
+use crate::pigeonhole::Pigeonhole;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct UploadResponse {
@@ -23,6 +24,7 @@ pub(super) async fn upload_pdf(
     repo: State<'_, Repository>,
     index: State<'_, Box<dyn Index + Send + Sync>>,
     juicer: State<'_, Box<dyn Juicer + Send + Sync>>,
+    pigeonhole: State<'_, Box<dyn Pigeonhole + Send + Sync>>,
     _token: &'_ Token,
 ) -> Result<Json<UploadResponse>, ApiError>
 {
@@ -37,15 +39,20 @@ pub(super) async fn upload_pdf(
 
     // Create initial metadata file for the uploaded bundle
     let metadata = Metadata::new();
-
-    let metadata_fragment = staging.write(Kind::Metadata).await?;
-    metadata.save(metadata_fragment).await?;
+    metadata.save(staging.write(Kind::Metadata).await?).await?;
 
     // Run the juicer over this upload
     juicer.extract(&staging).await?;
 
-    // Detect and assign tags
-    // TODO: Implement
+    // Detect and assign labels
+    if let Some(plaintext) = staging.plaintext().await.transpose()? {
+        let labels = pigeonhole.guess(&plaintext).await?;
+
+        // Load, update and save metadata
+        let mut metadata = staging.metadata().await.expect("No metadata")?;
+        metadata.labels.extend(labels);
+        metadata.save(staging.write(Kind::Metadata).await?).await?;
+    }
 
     // Make a bundle from the staging
     let bundle = staging.create(&repo).await?;

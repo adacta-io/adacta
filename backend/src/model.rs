@@ -1,10 +1,12 @@
+use std::borrow::Borrow;
 use std::ffi::OsString;
 use std::str::FromStr;
 
-use anyhow::{anyhow, Error};
 use base58::{FromBase58, ToBase58};
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 use uuid::Uuid;
+
+use anyhow::{anyhow, Error};
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct DocId(Uuid);
@@ -52,4 +54,19 @@ pub enum Kind {
 
 impl Kind {
     pub fn other(name: impl Into<OsString>) -> Self { return Self::Other { name: name.into() }; }
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
+pub struct Label(String);
+
+impl<S: Into<String>> From<S> for Label {
+    fn from(s: S) -> Self { return Self(s.into()); }
+}
+
+impl Borrow<String> for Label {
+    fn borrow(&self) -> &String { return &self.0; }
+}
+
+impl Borrow<str> for Label {
+    fn borrow(&self) -> &str { return &self.0; }
 }

@@ -7,7 +7,7 @@ use async_trait::async_trait;
 
 use crate::config::DockerJuicer;
 use crate::model::Kind;
-use crate::repo::BundleStaging;
+use crate::repo::{BundleStaging, FragmentContainer};
 
 pub struct Juicer {
     docker: Docker,
