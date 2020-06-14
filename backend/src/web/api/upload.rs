@@ -3,14 +3,13 @@ use rocket::{post, Data, State};
 use rocket_contrib::json::Json;
 use serde::Serialize;
 
-use crate::auth::Token;
 use crate::index::Index;
 use crate::juicer::Juicer;
 use crate::meta::Metadata;
 use crate::model::Kind;
 use crate::repo::{FragmentContainer, Repository};
 
-use super::ApiError;
+use super::{ApiError, Token};
 use crate::pigeonhole::Pigeonhole;
 
 #[derive(Debug, Clone, Serialize)]
@@ -19,15 +18,12 @@ pub struct UploadResponse {
 }
 
 #[post("/upload", format = "application/pdf", data = "<data>")]
-pub(super) async fn upload_pdf(
-    data: Data,
-    repo: State<'_, Repository>,
-    index: State<'_, Box<dyn Index + Send + Sync>>,
-    juicer: State<'_, Box<dyn Juicer + Send + Sync>>,
-    pigeonhole: State<'_, Box<dyn Pigeonhole + Send + Sync>>,
-    _token: &'_ Token,
-) -> Result<Json<UploadResponse>, ApiError>
-{
+pub(super) async fn upload_pdf(data: Data,
+                               repo: State<'_, Repository>,
+                               index: State<'_, Box<dyn Index + Send + Sync>>,
+                               juicer: State<'_, Box<dyn Juicer + Send + Sync>>,
+                               pigeonhole: State<'_, Box<dyn Pigeonhole + Send + Sync>>,
+                               _token: &'_ Token) -> Result<Json<UploadResponse>, ApiError> {
     // Create a new staging area
     let staging = repo.stage().await?;
 
@@ -60,7 +56,7 @@ pub(super) async fn upload_pdf(
     // Index the bundle
     index.index(&bundle).await?;
 
-    return Ok(Json(UploadResponse {
+    Ok(Json(UploadResponse {
         id: bundle.id().to_string(),
-    }));
+    }))
 }

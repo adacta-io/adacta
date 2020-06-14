@@ -7,7 +7,7 @@ use clap::{App, Arg};
 
 use crate::auth::Authenticator;
 use crate::config::{
-    Config, Index as IndexConfig, Juicer as JuicerConfig, Pigeonhole as PigeonholeConfig
+    Config, Index as IndexConfig, Juicer as JuicerConfig, Pigeonhole as PigeonholeConfig,
 };
 use crate::index::Index;
 use crate::juicer::Juicer;
@@ -32,15 +32,13 @@ async fn main() -> Result<()> {
         .name(env!("CARGO_PKG_NAME"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .author(env!("CARGO_PKG_AUTHORS"))
-        .arg(
-            Arg::with_name("config")
-                .short("c")
-                .long("config")
-                .value_name("FILE")
-                .help("Sets a custom config file")
-                .takes_value(true)
-                .default_value("config.yaml"),
-        )
+        .arg(Arg::with_name("config")
+            .short("c")
+            .long("config")
+            .value_name("FILE")
+            .help("Sets a custom config file")
+            .takes_value(true)
+            .default_value("config.yaml"))
         .get_matches();
 
     let config = Config::load(matches.value_of("config").expect("No config arg")).await?;

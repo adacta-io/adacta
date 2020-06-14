@@ -19,42 +19,34 @@ impl Pigeonhole {
 
         let labels = Self::load(&path).await?;
 
-        return Ok(Self { path, labels });
+        Ok(Self { path, labels })
     }
 
     async fn load(path: impl AsRef<Path>) -> Result<HashSet<Label>> {
         match tokio::fs::read(path).await {
-            Ok(data) => {
-                return Ok(bincode::deserialize(&data)?);
-            }
-            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
-                return Ok(HashSet::new());
-            }
-            Err(err) => {
-                return Err(err.into());
-            }
-        };
+            Ok(data) => Ok(bincode::deserialize(&data)?),
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(HashSet::new()),
+            Err(err) => Err(err.into()),
+        }
     }
 
     async fn save(path: impl AsRef<Path>, classifiers: &HashSet<Label>) -> Result<()> {
         let data = bincode::serialize(classifiers)?;
         tokio::fs::write(path, &data).await?;
 
-        return Ok(());
+        Ok(())
     }
 }
 
 #[async_trait]
 impl super::Pigeonhole for Pigeonhole {
-    fn labels(&self) -> HashSet<Label> { return self.labels.clone(); }
+    fn labels(&self) -> HashSet<Label> { self.labels.clone() }
 
-    async fn guess(&self, _text: &str) -> Result<HashSet<Label>> { return Ok(HashSet::new()); }
+    async fn guess(&self, _text: &str) -> Result<HashSet<Label>> { Ok(HashSet::new()) }
 
     async fn train(&mut self, _text: &str, labels: HashSet<Label>) -> Result<()> {
         self.labels.extend(labels);
 
-        Self::save(&self.path, &self.labels).await?;
-
-        return Ok(());
+        Self::save(&self.path, &self.labels).await
     }
 }

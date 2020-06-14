@@ -48,7 +48,7 @@ impl Authenticator {
     pub async fn from_config(config: Auth) -> Result<Self> {
         // TODO: Add some sanity checks (empty values, ...)
 
-        return Ok(Self {
+        Ok(Self {
             username: config.username,
             passhash: config.passhash,
 
@@ -60,7 +60,7 @@ impl Authenticator {
             jwt_token_duration: Duration::from_secs(60 * 60), // TODO: Make configurable
 
             api_keys: config.api_keys,
-        });
+        })
     }
 
     pub async fn verify_token(&self, bearer: &str) -> Result<Token> {
@@ -70,9 +70,9 @@ impl Authenticator {
             &jsonwebtoken::Validation::default(),
         )?;
 
-        return Ok(Token {
+        Ok(Token {
             username: data.claims.sub,
-        });
+        })
     }
 
     pub async fn sign_token(&self, token: &Token) -> Result<String> {
@@ -82,7 +82,7 @@ impl Authenticator {
             &self.jwt_encoding_key,
         )?;
 
-        return Ok(bearer);
+        Ok(bearer)
     }
 
     pub async fn login(&self, username: &str, password: &str) -> Option<Token> {
@@ -92,21 +92,17 @@ impl Authenticator {
         let pass = bcrypt::verify(password.as_bytes(), &self.passhash).ok()?;
 
         if !user || !pass {
-            return None;
+            None
+        } else {
+            Some(Token { username: username.to_owned() })
         }
-
-        return Some(Token {
-            username: username.to_owned(),
-        });
     }
 
     pub async fn verify_key(&self, username: &str, password: &str) -> Option<Token> {
         if bcrypt::verify(password, self.api_keys.get(username)?).ok()? {
-            return Some(Token {
-                username: username.to_owned(),
-            });
+            Some(Token { username: username.to_owned() })
         } else {
-            return None;
+            None
         }
     }
 }

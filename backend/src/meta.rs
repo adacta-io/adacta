@@ -19,19 +19,19 @@ pub struct Metadata {
 
 impl Metadata {
     pub fn new() -> Self {
-        return Self {
+        Self {
             uploaded: Utc::now(),
             archived: None,
             labels: HashSet::new(),
             properties: HashMap::new(),
-        };
+        }
     }
 
     pub async fn load(mut r: impl AsyncRead + Unpin) -> Result<Self> {
         let mut buffer = Vec::new();
         r.read_to_end(&mut buffer).await?;
 
-        return Ok(serde_json::from_slice(&buffer)?);
+        Ok(serde_json::from_slice(&buffer)?)
     }
 
     pub async fn save(&self, mut w: impl AsyncWrite + Unpin) -> Result<()> {
@@ -39,10 +39,10 @@ impl Metadata {
 
         w.write_all(&buffer).await?;
 
-        return Ok(());
+        Ok(())
     }
 }
 
 impl Default for Metadata {
-    fn default() -> Self { return Self::new(); }
+    fn default() -> Self { Self::new() }
 }

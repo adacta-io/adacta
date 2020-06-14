@@ -83,6 +83,6 @@ impl Config {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).await?;
 
-        return Ok(serde_yaml::from_slice(&buffer)?);
+        Ok(serde_yaml::from_slice(&buffer)?)
     }
 }

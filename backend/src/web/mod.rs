@@ -9,15 +9,12 @@ use crate::repo::Repository;
 mod api;
 mod frontend;
 
-pub async fn serve(
-    auth: Authenticator,
-    repo: Repository,
-    index: Box<dyn Index + Send + Sync>,
-    juicer: Box<dyn Juicer + Send + Sync>,
-    pigeonhole: Box<dyn Pigeonhole + Send + Sync>,
-) -> Result<()>
-{
-    return Ok(rocket::ignite()
+pub async fn serve(auth: Authenticator,
+                   repo: Repository,
+                   index: Box<dyn Index + Send + Sync>,
+                   juicer: Box<dyn Juicer + Send + Sync>,
+                   pigeonhole: Box<dyn Pigeonhole + Send + Sync>) -> Result<()> {
+    Ok(rocket::ignite()
         .attach(api::Authorization {})
         .manage(auth)
         .manage(repo)
@@ -27,5 +24,5 @@ pub async fn serve(
         .mount("/api", api::routes())
         .mount("/", frontend::Frontend {})
         .serve()
-        .await?);
+        .await?)
 }
