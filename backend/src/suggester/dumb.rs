@@ -2,22 +2,22 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-
 use async_trait::async_trait;
+use tokio::sync::RwLock;
 
-use crate::config::DumbPigeonhole as Config;
+use crate::config::DumbSuggester as Config;
 use crate::model::Label;
 
-pub struct Pigeonhole {
+pub struct Suggester {
     path: PathBuf,
-    labels: HashSet<Label>,
+    labels: RwLock<HashSet<Label>>,
 }
 
-impl Pigeonhole {
+impl Suggester {
     pub async fn from_config(config: Config) -> Result<Self> {
         let path = PathBuf::from(config.path);
 
-        let labels = Self::load(&path).await?;
+        let labels = RwLock::new(Self::load(&path).await?);
 
         Ok(Self { path, labels })
     }
@@ -39,14 +39,21 @@ impl Pigeonhole {
 }
 
 #[async_trait]
-impl super::Pigeonhole for Pigeonhole {
-    fn labels(&self) -> HashSet<Label> { self.labels.clone() }
+impl super::Suggester for Suggester {
+    async fn labels(&self) -> HashSet<Label> {
+        let labels = self.labels.read().await;
+        return labels.clone();
+    }
 
     async fn guess(&self, _text: &str) -> Result<HashSet<Label>> { Ok(HashSet::new()) }
 
-    async fn train(&mut self, _text: &str, labels: HashSet<Label>) -> Result<()> {
-        self.labels.extend(labels);
+    async fn train(&self, _text: &str, expected_labels: &HashSet<Label>) -> Result<()> {
+        let mut labels = self.labels.write().await;
 
-        Self::save(&self.path, &self.labels).await
+        labels.extend(expected_labels.clone());
+
+        Self::save(&self.path, &labels).await?;
+
+        return Ok(());
     }
 }

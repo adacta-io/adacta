@@ -1,22 +1,18 @@
-use std::io::Cursor;
-
 use anyhow::Error;
 use rocket::{Request, Response};
 use rocket::http::Status;
 use rocket::response::Responder;
 use rocket::response::status::{BadRequest, NotFound};
 
-use async_trait::async_trait;
-
 #[derive(Debug)]
 pub(super) struct InternalError(pub Error);
 
-#[async_trait]
-impl<'r> Responder<'r> for InternalError {
-    async fn respond_to(self, _request: &'r Request<'_>) -> Result<Response<'r>, Status> {
-        Response::build()
+impl<'r, 'o: 'r> Responder<'r, 'o> for InternalError {
+    fn respond_to(self, request: &'r Request<'_>) -> Result<Response<'o>, Status> {
+        let message = format!("{:#?}", self.0);
+
+        Response::build_from(message.respond_to(request)?)
             .status(Status::InternalServerError)
-            .sized_body(Cursor::new(format!("{:#?}", self.0))).await
             .ok()
     }
 }

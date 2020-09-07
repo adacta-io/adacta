@@ -4,12 +4,11 @@ use std::ops::{Add, AddAssign, Mul};
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
-
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use tokio::sync::RwLock;
 
-use crate::config::BayesicPigeonhole as Config;
-
+use crate::config::BayesicSuggester as Config;
 use crate::model::Label;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Deserialize, Serialize)]
@@ -121,14 +120,14 @@ impl Classifier {
     }
 }
 
-pub struct Pigeonhole {
+pub struct Suggester {
     path: PathBuf,
     certainty: f64,
 
-    classifiers: HashMap<Label, Classifier>,
+    classifiers: RwLock<HashMap<Label, Classifier>>,
 }
 
-impl Pigeonhole {
+impl Suggester {
     pub async fn from_config(config: Config) -> Result<Self> {
         let path = PathBuf::from(config.path);
 
@@ -137,7 +136,7 @@ impl Pigeonhole {
         Ok(Self {
             path,
             certainty: config.certainty,
-            classifiers,
+            classifiers: RwLock::new(classifiers),
         })
     }
 
@@ -169,42 +168,50 @@ impl Pigeonhole {
 
         tokens
     }
+
+    async fn suggest(&self, tokens: &HashMap<String, u64>) -> HashSet<Label> {
+        let classifiers = self.classifiers.read().await;
+
+        return classifiers.iter()
+            .filter_map(|(label, classifier)| (classifier.classify(&tokens) >= self.certainty).then(|| label.clone()))
+            .collect();
+    }
 }
 
 #[async_trait]
-impl super::Pigeonhole for Pigeonhole {
-    fn labels(&self) -> HashSet<Label> { self.classifiers.keys().cloned().collect() }
+impl super::Suggester for Suggester {
+    async fn labels(&self) -> HashSet<Label> {
+        let classifiers = self.classifiers.read().await;
+
+        return classifiers.keys().cloned().collect();
+    }
 
     async fn guess(&self, text: &str) -> Result<HashSet<Label>> {
         let tokens = Self::tokenize(text);
 
-        Ok(self.classifiers
-               .iter()
-               .filter_map(|(label, classifier)| (classifier.classify(&tokens) >= self.certainty).then(|| label.clone()))
-               .collect())
+        return Ok(self.suggest(&tokens).await);
     }
 
-    async fn train(&mut self, text: &str, labels: HashSet<Label>) -> Result<()> {
+    async fn train(&self, text: &str, expected_labels: &HashSet<Label>) -> Result<()> {
         let tokens = Self::tokenize(text);
 
-        for label in &labels {
-            self.classifiers.entry(label.clone()).or_insert_with(|| {
-                println!("New label: {:?}", label);
-                Classifier::new()
-            });
+        // Re-calculate which labels have been proposed before
+        let proposed_labels = self.suggest(&tokens).await;
+
+        let mut classifiers = self.classifiers.write().await;
+
+        // Calculate added and removed labels and train classifiers accordingly
+        for label in proposed_labels.difference(&expected_labels) {
+            let classifier = classifiers.entry(label.clone()).or_insert_with(Classifier::new);
+            classifier.train_con(&tokens);
         }
 
-        for (label, classifier) in &mut self.classifiers {
-            if labels.contains(label) {
-                println!("Train pro: {:?}: {:?}", label, tokens);
-                classifier.train_pro(&tokens);
-            } else {
-                println!("Train con: {:?}: {:?}", label, tokens);
-                classifier.train_con(&tokens);
-            }
+        for label in expected_labels.difference(&proposed_labels) {
+            let classifier = classifiers.entry(label.clone()).or_insert_with(Classifier::new);
+            classifier.train_pro(&tokens);
         }
 
-        Self::save(&self.path, &self.classifiers).await?;
+        Self::save(&self.path, &classifiers).await?;
 
         Ok(())
     }
@@ -212,11 +219,14 @@ impl super::Pigeonhole for Pigeonhole {
 
 #[cfg(test)]
 mod tests {
+    use crate::suggester::Suggester as _;
+
     use super::*;
-    use crate::pigeonhole::Pigeonhole as _;
 
     #[tokio::test]
     async fn classify() {
+        let tmp = tempfile::tempdir().unwrap();
+
         let meat = [
             "sirloin meatloaf ham hock sausage meatball tongue prosciutto picanha turkey ball tip pastrami. ribeye chicken sausage, ham hock landjaeger pork belly pancetta ball tip tenderloin leberkas shank shankle rump. cupim short ribs ground round biltong tenderloin ribeye drumstick landjaeger short loin doner chicken shoulder spare ribs fatback boudin. pork chop shank shoulder, t-bone beef ribs drumstick landjaeger meatball.",
             "sirloin porchetta drumstick, pastrami bresaola landjaeger turducken kevin ham capicola corned beef. pork cow capicola, pancetta turkey tri-tip doner ball tip salami. fatback pastrami rump pancetta landjaeger. doner porchetta meatloaf short ribs cow chuck jerky pork chop landjaeger picanha tail.",
@@ -226,81 +236,80 @@ mod tests {
             "pea horseradish azuki bean lettuce avocado asparagus okra. kohlrabi radish okra azuki bean corn fava bean mustard tigernut jã­cama green bean celtuce collard greens avocado quandong fennel gumbo black-eyed pea. grape silver beet watercress potato tigernut corn groundnut. chickweed okra pea winter purslane coriander yarrow sweet pepper radish garlic brussels sprout groundnut summer purslane earthnut pea tomato spring onion azuki bean gourd. gumbo kakadu plum komatsuna black-eyed pea green bean zucchini gourd winter purslane silver beet rock melon radish asparagus spinach.",
         ];
 
-        let mut pigeonhole = Pigeonhole::from_config(Config {
-            path: String::from("bayesian"),
+        let suggester = Suggester::from_config(Config {
+            path: tmp.path().join("bayesian").display().to_string(),
             certainty: 0.1,
         }).await.unwrap();
 
-        pigeonhole.train(
+        suggester.train(
             &meat[0],
-            vec!["Meat".into(), "Foo".into()].into_iter().collect(),
+            &vec![Label::from("Meat"), Label::from("Foo")].into_iter().collect(),
         ).await.unwrap();
 
-        assert_eq!(pigeonhole.classifiers.get("Meat").unwrap()
-                             .data.get("sirloin").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Meat").unwrap()
+                       .data.get("sirloin").unwrap(),
                    &Counter::with(1, 0));
-        assert_eq!(pigeonhole.classifiers.get("Foo").unwrap()
-                             .data.get("sirloin").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Foo").unwrap()
+                       .data.get("sirloin").unwrap(),
                    &Counter::with(1, 0));
-        assert_eq!(pigeonhole.classifiers.get("Meat").unwrap()
-                             .data.get("prosciutto").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Meat").unwrap()
+                       .data.get("prosciutto").unwrap(),
                    &Counter::with(1, 0));
-        assert_eq!(pigeonhole.classifiers.get("Foo").unwrap()
-                             .data.get("prosciutto").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Foo").unwrap()
+                       .data.get("prosciutto").unwrap(),
                    &Counter::with(1, 0));
 
-        pigeonhole.train(
+        suggester.train(
             &meat[1],
-            vec!["Meat".into(), "Bar".into()].into_iter().collect(),
+            &vec![Label::from("Meat"), Label::from("Bar")].into_iter().collect(),
         ).await.unwrap();
 
-        assert_eq!(pigeonhole.classifiers.get("Meat").unwrap()
-                             .data.get("sirloin").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Meat").unwrap()
+                       .data.get("sirloin").unwrap(),
                    &Counter::with(2, 0));
-        assert_eq!(pigeonhole.classifiers.get("Foo").unwrap()
-                             .data.get("sirloin").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Foo").unwrap()
+                       .data.get("sirloin").unwrap(),
                    &Counter::with(1, 1));
-        assert_eq!(pigeonhole.classifiers.get("Bar").unwrap()
-                             .data.get("sirloin").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Bar").unwrap()
+                       .data.get("sirloin").unwrap(),
                    &Counter::with(1, 0));
-        assert_eq!(pigeonhole.classifiers.get("Meat").unwrap()
-                             .data.get("prosciutto").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Meat").unwrap()
+                       .data.get("prosciutto").unwrap(),
                    &Counter::with(1, 0));
-        assert_eq!(pigeonhole.classifiers.get("Foo").unwrap()
-                             .data.get("prosciutto").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Foo").unwrap()
+                       .data.get("prosciutto").unwrap(),
                    &Counter::with(1, 0));
-        assert_eq!(pigeonhole.classifiers.get("Meat").unwrap()
-                             .data.get("bresaola").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Meat").unwrap()
+                       .data.get("bresaola").unwrap(),
                    &Counter::with(1, 0));
-        assert_eq!(pigeonhole.classifiers.get("Foo").unwrap()
-                             .data.get("bresaola").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Foo").unwrap()
+                       .data.get("bresaola").unwrap(),
                    &Counter::with(0, 1));
-        assert_eq!(pigeonhole.classifiers.get("Bar").unwrap()
-                             .data.get("bresaola").unwrap(),
+        assert_eq!(suggester.classifiers.read().await.get("Bar").unwrap()
+                       .data.get("bresaola").unwrap(),
                    &Counter::with(1, 0));
 
-        pigeonhole.train(
+        suggester.train(
             &vegg[0],
-            vec!["Vegg".into(), "Foo".into()].into_iter().collect(),
+            &vec!["Vegg".into(), "Foo".into()].into_iter().collect(),
         ).await.unwrap();
 
-        pigeonhole.train(
+        suggester.train(
             &vegg[1],
-            vec!["Vegg".into(), "Bar".into()].into_iter().collect(),
+            &vec![Label::from("Vegg"), Label::from("Bar")].into_iter().collect(),
         ).await.unwrap();
 
-        assert_eq!(pigeonhole.classifiers.get("Meat").unwrap()
-                             .classify(&Pigeonhole::tokenize("salami")),
+        assert_eq!(suggester.classifiers.read().await.get("Meat").unwrap()
+                       .classify(&Suggester::tokenize("salami")),
                    1.0f64);
-        assert_eq!(pigeonhole.classifiers.get("Foo").unwrap()
-                             .classify(&Pigeonhole::tokenize("salami")),
+        assert_eq!(suggester.classifiers.read().await.get("Foo").unwrap()
+                       .classify(&Suggester::tokenize("salami")),
                    0.0f64);
-        assert_eq!(pigeonhole.classifiers.get("Bar").unwrap()
-                             .classify(&Pigeonhole::tokenize("salami")),
+        assert_eq!(suggester.classifiers.read().await.get("Bar").unwrap()
+                       .classify(&Suggester::tokenize("salami")),
                    1.0f64);
 
-        assert_eq!(pigeonhole.guess("salami pancetta beef ribs").await.unwrap(),
-                   vec!["Meat".into(), "Foo".into(), "Bar".into()]
-                       .into_iter().collect());
+        assert_eq!(suggester.guess("salami pancetta beef ribs").await.unwrap(),
+                   vec![Label::from("Meat"), Label::from("Foo"), Label::from("Bar")].into_iter().collect());
     }
 }

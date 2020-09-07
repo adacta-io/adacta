@@ -19,7 +19,11 @@ index:
 juicer:
   type: docker
 
-pigeonhole:
+suggester:
   type: bayesic
   path: /home/fooker/tmp/bayesic
   certainty: 0.1
+
+web:
+  address: '::1'
+  port: 8000

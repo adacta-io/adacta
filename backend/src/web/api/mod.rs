@@ -8,10 +8,9 @@ use crate::model::DocId;
 pub(self) mod auth;
 pub(self) mod error;
 
-mod inbox;
-mod repo;
-mod search;
 mod upload;
+mod inbox;
+mod archive;
 mod labels;
 
 pub(self) use error::{ApiError, InternalError};
@@ -21,14 +20,16 @@ pub(super) use auth::Authorization;
 
 pub fn routes() -> Vec<Route> {
     routes![
-        auth::auth,
-        repo::bundle,
-        repo::fragment,
-        search::search,
-        inbox::inbox,
+        auth::login,
         upload::upload_pdf,
-        labels::labels,
-        labels::guess,
+        inbox::list,
+        inbox::get,
+        inbox::delete,
+        inbox::archive,
+        archive::bundle,
+        archive::fragment,
+        archive::search,
+        labels::list,
     ]
 }
 

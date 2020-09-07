@@ -7,27 +7,7 @@ use tokio::fs::OpenOptions;
 use tokio::io::AsyncReadExt;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct DumbPigeonhole {
-    pub path: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct BayesicPigeonhole {
-    pub path: String,
-    pub certainty: f64,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "type")]
-#[serde(rename_all = "lowercase")]
-pub enum Pigeonhole {
-    Dumb(DumbPigeonhole),
-    Bayesic(BayesicPigeonhole),
-}
-
-#[derive(Debug, Clone, Deserialize)]
 pub struct Auth {
-    pub username: String,
     pub passhash: String,
 
     pub secret: String,
@@ -66,6 +46,31 @@ pub enum Juicer {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct DumbSuggester {
+    pub path: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BayesicSuggester {
+    pub path: String,
+    pub certainty: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type")]
+#[serde(rename_all = "lowercase")]
+pub enum Suggester {
+    Dumb(DumbSuggester),
+    Bayesic(BayesicSuggester),
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Web {
+    pub address: String,
+    pub port: u16,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     pub auth: Auth,
 
@@ -73,7 +78,9 @@ pub struct Config {
 
     pub index: Index,
     pub juicer: Juicer,
-    pub pigeonhole: Pigeonhole,
+    pub suggester: Suggester,
+
+    pub web: Web,
 }
 
 impl Config {

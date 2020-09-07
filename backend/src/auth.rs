@@ -9,14 +9,12 @@ use crate::config::Auth;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
-    pub sub: String,
     pub exp: u64,
 }
 
 impl Claims {
-    pub fn new(username: String, timeout: Duration) -> Self {
+    pub fn new(timeout: Duration) -> Self {
         return Self {
-            sub: username,
             exp: (SystemTime::now() + timeout)
                 .duration_since(std::time::UNIX_EPOCH)
                 .expect("System time before epoch")
@@ -27,11 +25,10 @@ impl Claims {
 
 #[derive(Debug)]
 pub struct Token {
-    pub username: String,
+    private: (),
 }
 
 pub struct Authenticator {
-    username: String,
     passhash: String,
 
     secret: String,
@@ -49,7 +46,6 @@ impl Authenticator {
         // TODO: Add some sanity checks (empty values, ...)
 
         Ok(Self {
-            username: config.username,
             passhash: config.passhash,
 
             secret: config.secret.clone(),
@@ -64,45 +60,40 @@ impl Authenticator {
     }
 
     pub async fn verify_token(&self, bearer: &str) -> Result<Token> {
-        let data = jsonwebtoken::decode::<Claims>(
+        jsonwebtoken::decode::<Claims>(
             bearer,
             &self.jwt_decoding_key,
             &jsonwebtoken::Validation::default(),
         )?;
 
-        Ok(Token {
-            username: data.claims.sub,
-        })
+        Ok(Token { private: () })
     }
 
     pub async fn sign_token(&self, token: &Token) -> Result<String> {
         let bearer = jsonwebtoken::encode(
             &jsonwebtoken::Header::default(),
-            &Claims::new(token.username.to_owned(), self.jwt_token_duration),
+            &Claims::new(self.jwt_token_duration),
             &self.jwt_encoding_key,
         )?;
 
         Ok(bearer)
     }
 
-    pub async fn login(&self, username: &str, password: &str) -> Option<Token> {
+    pub async fn login(&self, password: &str) -> Option<Token> {
         // TODO: Verify passhash is valid on config load
 
-        let user = username == self.username.as_str();
-        let pass = bcrypt::verify(password.as_bytes(), &self.passhash).ok()?;
-
-        if !user || !pass {
-            None
+        if bcrypt::verify(password.as_bytes(), &self.passhash).ok()? {
+            return Some(Token { private: () });
         } else {
-            Some(Token { username: username.to_owned() })
+            return None;
         }
     }
 
     pub async fn verify_key(&self, username: &str, password: &str) -> Option<Token> {
         if bcrypt::verify(password, self.api_keys.get(username)?).ok()? {
-            Some(Token { username: username.to_owned() })
+            return Some(Token { private: () });
         } else {
-            None
+            return None;
         }
     }
 }

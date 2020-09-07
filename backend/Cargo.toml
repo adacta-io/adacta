@@ -13,12 +13,12 @@ edition = "2018"
 
 [dependencies]
 clap = "2"
-rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "async" }
-rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket", branch = "async" }
+rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "master" }
+rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket", branch = "master" }
 rust-embed = { git = "https://github.com/pyros2097/rust-embed.git", branch = "master" }
 uuid = { version = "0.8", features = ["v4"] }
-base58 = "0.1"
-base64 = "0.12"
+base58 = "0.1.0"
+base64 = "0.12.3"
 anyhow = "1"
 thiserror = "1"
 chrono = { version = "0.4", features = ["serde"] }
@@ -34,3 +34,9 @@ maplit = "1"
 bcrypt = "0.7"
 jsonwebtoken = "7.1"
 bincode = "1.2"
+hyperx = "1.1.0"
+
+[dev-dependencies]
+tempfile = "3.1.0"
+mockall = "0.8.0"
+rand = "0.7.3"

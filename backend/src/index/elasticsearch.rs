@@ -14,7 +14,7 @@ use async_trait::async_trait;
 use crate::config::ElasticsearchIndex as Config;
 use crate::index::SearchResponse;
 use crate::model::{DocId, Label};
-use crate::repo::{Bundle, FragmentContainer};
+use crate::repository::{Bundle, Archived};
 
 const DOCUMENT_TYPE: &str = "document";
 
@@ -82,7 +82,7 @@ impl Index {
 
 #[async_trait]
 impl super::Index for Index {
-    async fn index(&self, bundle: &Bundle) -> Result<()> {
+    async fn index<'r>(&self, bundle: &Bundle<'r, Archived>) -> Result<()> {
         let id = bundle.id().to_string();
 
         let text = bundle.plaintext().await.transpose()?

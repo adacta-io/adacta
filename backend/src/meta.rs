@@ -35,11 +35,11 @@ impl Metadata {
     }
 
     pub async fn save(&self, mut w: impl AsyncWrite + Unpin) -> Result<()> {
-        let buffer = serde_json::to_vec_pretty(self)?;
+        return Ok(w.write_all(&self.to_vec()?).await?);
+    }
 
-        w.write_all(&buffer).await?;
-
-        Ok(())
+    pub fn to_vec(&self) -> Result<Vec<u8>> {
+        return Ok(serde_json::to_vec_pretty(self)?);
     }
 }
 

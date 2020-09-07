@@ -3,17 +3,17 @@ use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{Header, Status};
 use rocket::request::{FromRequest, Outcome};
 use rocket_contrib::json::Json;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::auth::Authenticator;
 pub use crate::auth::Token;
 use crate::utils::StrExt;
 
-use super::ApiError;
+use async_trait::async_trait;
 
 pub struct Authorization {}
 
-#[async_trait::async_trait]
+#[async_trait]
 impl Fairing for Authorization {
     fn info(&self) -> Info {
         Info {
@@ -22,7 +22,7 @@ impl Fairing for Authorization {
         }
     }
 
-    async fn on_request<'a>(&'a self, request: &'a mut Request<'_>, _data: &'a Data) {
+    async fn on_request(&self, request: &mut Request<'_>, _data: &Data) {
         request.local_cache_async::<Option<Token>, _>(async {
             let auth = request
                 .guard::<State<'_, Authenticator>>()
@@ -54,17 +54,17 @@ impl Fairing for Authorization {
         }).await;
     }
 
-    async fn on_response<'a>(&'a self, request: &'a Request<'_>, response: &'a mut Response<'_>) {
+    async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {
         let token = request.local_cache_async::<Option<Token>, _>(async {
             return None;
         }).await;
 
         if let Some(token) = token {
             let auth = request.guard::<State<'_, Authenticator>>().await
-                              .expect("No Authenticator");
+                .expect("No Authenticator");
 
             let bearer = auth.sign_token(token).await
-                             .expect("Can not sign token");
+                .expect("Can not sign token");
 
             response.set_header(Header::new("Authorization", bearer));
         }
@@ -89,27 +89,23 @@ impl<'a, 'r> FromRequest<'a, 'r> for &'a Token {
 
 #[derive(Debug, Deserialize)]
 pub struct AuthRequest {
-    pub username: String,
     pub password: String,
 }
 
-#[derive(Debug, Serialize)]
-pub struct AuthResponse {
-    pub username: String,
-    pub token: String,
-}
-
-#[post("/auth", data = "<request>")]
-pub(super) async fn auth(auth: State<'_, Authenticator>,
-                         request: Json<AuthRequest>) -> Result<Json<AuthResponse>, ApiError> {
-    if let Some(token) = auth.login(&request.username, &request.password).await {
+#[post("/auth/login", data = "<request>")]
+pub(super) async fn login(auth: State<'_, Authenticator>,
+                          request: Json<AuthRequest>) -> Response<'_> {
+    if let Some(token) = auth.login(&request.password).await {
         let bearer = auth.sign_token(&token).await.expect("Can not sign token");
 
-        Ok(Json(AuthResponse {
-            username: request.username.clone(),
-            token: bearer,
-        }))
+        return Response::build()
+            .header(Header::new("Authorization", bearer))
+            .status(Status::Accepted)
+            .finalize();
+
     } else {
-        Err(ApiError::bad_request("Authorization failed".to_string()))
+        return Response::build()
+            .status(Status::BadRequest)
+            .finalize();
     }
 }

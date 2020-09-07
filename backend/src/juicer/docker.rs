@@ -5,9 +5,9 @@ use tokio::stream::StreamExt;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 
-use crate::config::DockerJuicer;
+use crate::config::DockerJuicer as Config;
 use crate::model::Kind;
-use crate::repo::{BundleStaging, FragmentContainer};
+use crate::repository::{Bundle, Staging};
 
 pub struct Juicer {
     docker: Docker,
@@ -18,7 +18,7 @@ pub struct Juicer {
 impl Juicer {
     const DOCKER_IMAGE: &'static str = "adacta10/juicer";
 
-    pub async fn from_config(config: DockerJuicer) -> Result<Self> {
+    pub async fn from_config(config: Config) -> Result<Self> {
         let docker = Docker::connect_with_local_defaults()?;
         // docker.ping().await?; // TODO: Implement?
 
@@ -31,7 +31,7 @@ impl Juicer {
 
 #[async_trait]
 impl super::Juicer for Juicer {
-    async fn extract(&self, bundle: &BundleStaging) -> Result<()> {
+    async fn extract<'r>(&self, bundle: &Bundle<'r, Staging>) -> Result<()> {
         let name = format!("juicer-{}", bundle.id());
 
         self.docker.create_container(Some(container::CreateContainerOptions { name: name.clone() }),

@@ -1,8 +1,11 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
+#[cfg(test)]
+use mockall::automock;
+
 use crate::model::DocId;
-use crate::repo::Bundle;
+use crate::repository::{Archived, Bundle};
 
 pub mod elasticsearch;
 
@@ -12,9 +15,10 @@ pub struct SearchResponse {
     pub docs: Vec<DocId>,
 }
 
+#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Index {
-    async fn index(&self, bundle: &Bundle) -> Result<()>;
+    async fn index<'r>(&self, bundle: &Bundle<'r, Archived>) -> Result<()>;
 
     async fn search(&self, query: &str) -> Result<SearchResponse>;
     async fn inbox(&self) -> Result<SearchResponse>;
