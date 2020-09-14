@@ -7,6 +7,7 @@ auth:
   api_keys:
     scanner: '$2b$10$pWRZIZUED2kMCQvLwJUT/ez3p0Sbz7tmq6Rs74x92.j5XigFZH5V2' # api123
     mailfetch: '$2b$10$Z30R18ayj1Jnik0Xtm4mmut3RqIc2EsvDzdvqqoGBKcsqsRExryya' # api321
+    test: '$2y$12$r.Pb0X8stu2Pa81s2AmbKOfKaY.vByYCzn/3Kwba.QPQJaoHYbEeq' # testkey
 
 repository:
   path: /home/fooker/tmp/repo

@@ -1,15 +1,15 @@
+use async_trait::async_trait;
+use log::info;
+use proto::api::auth::AuthRequest;
 use rocket::{Data, post, Request, Response, State};
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{Header, Status};
 use rocket::request::{FromRequest, Outcome};
 use rocket_contrib::json::Json;
-use serde::Deserialize;
 
 use crate::auth::Authenticator;
 pub use crate::auth::Token;
 use crate::utils::StrExt;
-
-use async_trait::async_trait;
 
 pub struct Authorization {}
 
@@ -87,22 +87,18 @@ impl<'a, 'r> FromRequest<'a, 'r> for &'a Token {
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct AuthRequest {
-    pub password: String,
-}
-
 #[post("/auth/login", data = "<request>")]
 pub(super) async fn login(auth: State<'_, Authenticator>,
                           request: Json<AuthRequest>) -> Response<'_> {
     if let Some(token) = auth.login(&request.password).await {
+        info!("Login successful");
+
         let bearer = auth.sign_token(&token).await.expect("Can not sign token");
 
         return Response::build()
             .header(Header::new("Authorization", bearer))
             .status(Status::Accepted)
             .finalize();
-
     } else {
         return Response::build()
             .status(Status::BadRequest)

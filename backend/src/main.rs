@@ -25,11 +25,15 @@ pub mod web;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = App::new("Adacta")
+    let matches = App::new("adacta")
         .version(env!("CARGO_PKG_VERSION"))
         .name(env!("CARGO_PKG_NAME"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .author(env!("CARGO_PKG_AUTHORS"))
+        .arg(Arg::with_name("debug")
+            .long("debug")
+            .help("Enable debug messages")
+            .takes_value(false))
         .arg(Arg::with_name("config")
             .short("c")
             .long("config")
@@ -38,6 +42,8 @@ async fn main() -> Result<()> {
             .takes_value(true)
             .default_value("adacta.yaml"))
         .get_matches();
+
+
 
     let config = Config::load(matches.value_of("config").expect("No config arg")).await?;
 

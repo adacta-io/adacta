@@ -85,9 +85,9 @@ impl super::Index for Index {
     async fn index<'r>(&self, bundle: &Bundle<'r, Archived>) -> Result<()> {
         let id = bundle.id().to_string();
 
-        let text = bundle.plaintext().await.transpose()?
+        let text = bundle.plaintext().await?
             .ok_or_else(|| anyhow!("Bundle does not contain plaintext"))?;
-        let meta = bundle.metadata().await.transpose()?
+        let meta = bundle.metadata().await?
             .ok_or_else(|| anyhow!("Bundle does not contain meta-data"))?;
 
         self.client
@@ -111,20 +111,6 @@ impl super::Index for Index {
                     "must" : {
                         "simple_query_string" : {
                             "query" : query
-                        }
-                    }
-                }
-            }
-        })).await
-    }
-
-    async fn inbox(&self) -> Result<SearchResponse> {
-        self.query(json!({
-            "query": {
-                "bool": {
-                    "must_not": {
-                        "exists": {
-                            "field": "archived"
                         }
                     }
                 }

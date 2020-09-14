@@ -1,7 +1,9 @@
 use anyhow::Context;
-use rocket::{post, Data, State};
+use log::{info, trace};
+use proto::api::upload::UploadResponse;
+use rocket::{Data, post, State};
+use rocket::data::ToByteUnit;
 use rocket_contrib::json::Json;
-use serde::Serialize;
 
 use crate::juicer::Juicer;
 use crate::meta::Metadata;
@@ -9,12 +11,6 @@ use crate::model::Kind;
 use crate::repository::Repository;
 
 use super::{ApiError, Token};
-use rocket::data::ToByteUnit;
-
-#[derive(Debug, Clone, Serialize)]
-pub struct UploadResponse {
-    id: String,
-}
 
 #[post("/upload", format = "application/pdf", data = "<data>")]
 pub(super) async fn upload_pdf(data: Data,
@@ -24,6 +20,8 @@ pub(super) async fn upload_pdf(data: Data,
     // Create a new staging area
     let staging = repository.stage().await?;
 
+    info!("Uploading to staging bundle {}", staging.id());
+
     match (|| async {
         // Write the uploaded file to the staging area
         let original_fragment = staging.write(Kind::other("original.pdf")).await?;
@@ -31,12 +29,18 @@ pub(super) async fn upload_pdf(data: Data,
             .stream_to(original_fragment).await
             .context("Writing original.pdf to staging")?;
 
+        trace!("Original fragment written");
+
         // Create initial metadata file for the uploaded bundle
         let metadata = Metadata::new();
         metadata.save(staging.write(Kind::Metadata).await?).await?;
 
+        trace!("Metadata fragment written");
+
         // Run the juicer over this upload
         juicer.extract(&staging).await?;
+
+        trace!("Juicer finished");
 
         return Result::<_, ApiError>::Ok(());
     })().await {

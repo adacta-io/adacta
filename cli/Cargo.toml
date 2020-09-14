@@ -1,0 +1,27 @@
+[package]
+name = "adacta-cli"
+version = "0.1.0"
+authors = ["Dustin Frisch <fooker@lab.sh>"]
+description = "Personal Document Archiving"
+repository = "https://github.com/adacta-io/adacta"
+license = "MIT"
+readme = "../README.md"
+keywords = ["pdf", "documents", "archive", "search"]
+categories = ["application"]
+
+edition = "2018"
+
+[dependencies]
+proto = { path = "../backend/proto" }
+tokio = { version = "0.2", features = [ "full" ] }
+tokio-util = { version = "0.3.1", features = [ "codec" ] }
+futures = "0.3.5"
+clap = { version = "2.33.3", features = ["color"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.57"
+serde_yaml = "0.8.13"
+reqwest = { version = "0.10.8", features = ["stream", "json"] }
+xdg = "2.2.0"
+anyhow = "1.0.32"
+colored = "2.0.0"
+join-lazy-fmt = "0.9.2"

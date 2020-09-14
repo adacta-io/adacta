@@ -40,4 +40,3 @@ impl FromParam<'_> for DocId {
         Ok(param.parse()?)
     }
 }
-

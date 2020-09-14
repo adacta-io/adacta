@@ -1,33 +1,24 @@
+use proto::api::archive::{BundleResponse, SearchResponse};
 use rocket::{get, http::ContentType, State};
 use rocket::http::RawStr;
 use rocket::response::{Content, Stream};
 use rocket_contrib::json::Json;
-use serde::Serialize;
 use tokio::io::AsyncRead;
 
 use crate::index::Index;
 use crate::model::{DocId, Kind};
-use crate::repository::{BundleContainer, Repository};
+use crate::repository::Repository;
 
 use super::{ApiError, InternalError, Token};
-
-#[derive(Debug, Clone, Serialize)]
-pub struct BundleResponse {
-    id: String,
-    //    created: DateTime<Utc>,
-    //    modified: DateTime<Utc>,
-
-    // Other metadata...
-}
 
 #[get("/archive/<id>")]
 pub(super) async fn bundle(id: DocId,
                            repository: State<'_, Repository>,
                            _token: &'_ Token) -> Result<Json<BundleResponse>, ApiError> {
-    let _bundle = repository.archive().get(id).await
+    let bundle = repository.archive().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
-    Ok(Json(BundleResponse { id: id.to_string() }))
+    Ok(Json(BundleResponse { id: bundle.id().to_string() }))
 }
 
 #[get("/archive/<id>/<fragment>")]
@@ -47,27 +38,20 @@ pub(super) async fn fragment(id: DocId,
     let bundle = repository.archive().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
-    let fragment = bundle.fragment(kind).await
-        .ok_or_else(|| ApiError::not_found(format!("Fragment not found: {}/{}", id, fragment)))?;
+    return bundle.with_fragment(kind, |file, kind| async move {
+        let content_type = match kind {
+            Kind::Document => ContentType::PDF,
+            Kind::Preview => ContentType::PNG,
+            Kind::Plaintext => ContentType::Plain,
+            Kind::Metadata => ContentType::JSON,
+            Kind::ProcessLog => ContentType::Plain,
+            Kind::Other { .. } => ContentType::Any,
+        };
 
-    let file = fragment.read().await.map_err(InternalError)?;
-
-    let content_type = match fragment.kind() {
-        Kind::Document => ContentType::PDF,
-        Kind::Preview => ContentType::PNG,
-        Kind::Plaintext => ContentType::Plain,
-        Kind::Metadata => ContentType::JSON,
-        Kind::ProcessLog => ContentType::Plain,
-        Kind::Other { .. } => ContentType::Any,
-    };
-
-    Ok(Content(content_type, file.into()))
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct SearchResponse {
-    pub count: u64,
-    pub docs: Vec<DocId>,
+        return Ok(Content(content_type, file.into()));
+    }).await
+        .map_err(|err| InternalError(err))?
+        .ok_or_else(|| ApiError::not_found(format!("Fragment not found: {}/{}", id, fragment)));
 }
 
 #[get("/archive?<query>")]
@@ -79,6 +63,6 @@ pub(super) async fn search(query: &RawStr,
 
     Ok(Json(SearchResponse {
         count: response.count,
-        docs: response.docs,
+        docs: response.docs.iter().map(DocId::to_string).collect(),
     }))
 }

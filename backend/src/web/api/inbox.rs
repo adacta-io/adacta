@@ -1,40 +1,24 @@
-use std::collections::{HashMap, HashSet};
-
-use chrono::{DateTime, Utc};
+use chrono::Utc;
+use proto::api::inbox::{ArchiveRequest, GetResponse, ListResponse};
 use rocket::{delete, get, post, State};
 use rocket_contrib::json::Json;
-use serde::{Deserialize, Serialize};
 
 use crate::index::Index;
 use crate::model::{DocId, Label};
-use crate::repository::{BundleContainer, Repository};
+use crate::repository::Repository;
 use crate::suggester::Suggester;
 
 use super::{ApiError, Token};
 
-#[derive(Debug, Clone, Serialize)]
-pub struct ListResponse {
-    pub count: u64,
-    pub docs: Vec<DocId>,
-}
-
 #[get("/inbox")]
-pub(super) async fn list(index: State<'_, Box<dyn Index + Send + Sync>>,
+pub(super) async fn list(repository: State<'_, Repository>,
                          _token: &'_ Token) -> Result<Json<ListResponse>, ApiError> {
-    let response = index.inbox().await?;
+    let docs = repository.inbox().list().await?;
 
     Ok(Json(ListResponse {
-        count: response.count,
-        docs: response.docs,
+        count: docs.len() as u64,
+        docs: docs.iter().take(10).map(DocId::to_string).collect(),
     }))
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct GetResponse {
-    pub id: DocId,
-    pub uploaded: DateTime<Utc>,
-    pub labels: HashSet<Label>,
-    pub properties: HashMap<String, String>,
 }
 
 #[get("/inbox/<id>")]
@@ -45,16 +29,16 @@ pub(super) async fn get(id: DocId,
     let bundle = repository.inbox().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
-    let metadata = bundle.metadata().await
-        .ok_or_else(|| ApiError::not_found(format!("Metadata not found: {}", id)))??;
+    let metadata = bundle.metadata().await?
+        .ok_or_else(|| ApiError::not_found(format!("Metadata not found: {}", id)))?;
 
-    let plaintext = bundle.plaintext().await
-        .ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))??;
+    let plaintext = bundle.plaintext().await?
+        .ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))?;
 
     return Ok(Json(GetResponse {
-        id,
+        id: id.to_string(),
         uploaded: metadata.uploaded,
-        labels: suggester.guess(&plaintext).await?,
+        labels: suggester.guess(&plaintext).await?.iter().map(Label::to_string).collect(),
         properties: metadata.properties,
     }));
 }
@@ -70,12 +54,6 @@ pub(super) async fn delete(id: DocId,
     return Ok(());
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct ArchiveRequest {
-    pub labels: HashSet<Label>,
-    pub properties: HashMap<String, String>,
-}
-
 #[post("/inbox/<id>", data = "<data>")]
 pub(super) async fn archive(id: DocId,
                             data: Json<ArchiveRequest>,
@@ -87,21 +65,26 @@ pub(super) async fn archive(id: DocId,
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
     // Update the metadata
-    let mut metadata = bundle.metadata().await.ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))??;
-    metadata.archived = Some(Utc::now());
-    metadata.labels = data.labels.clone();
-    metadata.properties = data.properties.clone();
-    metadata.save(bundle.write_manifest().await?).await?;
+    let mut metadata = bundle.metadata().await?
+        .ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))?;
 
+    metadata.archived = Some(Utc::now());
+    metadata.labels = data.labels.iter().map(Label::from).collect();
+    metadata.properties = data.properties.clone();
+
+    bundle.write_metadata(&metadata).await?;
+
+    // Archive the bundle
     let archived = bundle.archive().await?;
 
     // Add the archived bundle to the index
     index.index(&archived).await?;
 
     // Train the suggester with the final labels
-    let plaintext = archived.plaintext().await.ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))??;
+    let plaintext = archived.plaintext().await?
+        .ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))?;
 
-    suggester.train(&plaintext, &data.labels).await?;
+    suggester.train(&plaintext, &metadata.labels).await?;
 
     return Ok(());
 }

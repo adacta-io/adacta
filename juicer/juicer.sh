@@ -16,7 +16,7 @@ if [[ "$(wc -c < "original.txt")" -lt 10 ]]; then
 else
   # Just copy original PDF and already extracted text
   cp 'original.pdf' 'document.pdf'
-  cp 'original.txt' 'document.pdf'
+  cp 'original.txt' 'document.txt'
 fi
 
 # Extract preview

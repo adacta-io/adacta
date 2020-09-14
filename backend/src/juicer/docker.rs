@@ -1,9 +1,9 @@
-use bollard::{container, Docker};
-use bytes::Bytes;
-use tokio::stream::StreamExt;
-
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use bollard::{container, Docker};
+use bytes::Bytes;
+use log::{info, error};
+use tokio::stream::StreamExt;
 
 use crate::config::DockerJuicer as Config;
 use crate::model::Kind;
@@ -16,14 +16,14 @@ pub struct Juicer {
 }
 
 impl Juicer {
-    const DOCKER_IMAGE: &'static str = "adacta10/juicer";
+    const DOCKER_IMAGE: &'static str = "adacta10/juicer:develop";
 
     pub async fn from_config(config: Config) -> Result<Self> {
         let docker = Docker::connect_with_local_defaults()?;
         // docker.ping().await?; // TODO: Implement?
 
         let image = config.image
-                          .unwrap_or_else(|| Self::DOCKER_IMAGE.to_string());
+            .unwrap_or_else(|| Self::DOCKER_IMAGE.to_string());
 
         Ok(Self { docker, image })
     }
@@ -34,6 +34,7 @@ impl super::Juicer for Juicer {
     async fn extract<'r>(&self, bundle: &Bundle<'r, Staging>) -> Result<()> {
         let name = format!("juicer-{}", bundle.id());
 
+        info!("Creating container {}", name);
         self.docker.create_container(Some(container::CreateContainerOptions { name: name.clone() }),
                                      container::Config {
                                          image: Some(self.image.clone()),
@@ -47,6 +48,7 @@ impl super::Juicer for Juicer {
                                      },
         ).await?;
 
+        info!("Starting container {}", name);
         self.docker.start_container(&name, None::<container::StartContainerOptions<String>>).await?;
 
         let mut log_writer = bundle.write(Kind::other("juicer.log")).await?;
@@ -58,22 +60,28 @@ impl super::Juicer for Juicer {
                                                                            follow: true,
                                                                            ..container::LogsOptions::default()
                                                                        }))
-                                                          .map(|v| match v {
-                                                              Ok(out) => Ok(Bytes::from(format!("{}", out))),
-                                                              Err(err) => Err(std::io::Error::new(std::io::ErrorKind::Other, err)),
-                                                          }));
+            .map(|v| {
+                info!(">> {:?}", v);
+                match v {
+                    Ok(out) => Ok(Bytes::from(format!("{}\n", out))),
+                    Err(err) => Err(std::io::Error::new(std::io::ErrorKind::Other, err)),
+                }
+            }));
         let logs = tokio::io::copy(&mut log_reader, &mut log_writer);
 
+        info!("Waiting for container to finish");
         let result = self.docker.wait_container(&name,
                                                 Some(container::WaitContainerOptions {
                                                     condition: "not-running",
                                                 }))
-                         .next().await
-                         .unwrap()?; // TODO: ist this the way to use this?
+            .next().await
+            .unwrap()?; // TODO: ist this the way to use this?
 
         logs.await?;
 
         if result.status_code != 0 {
+            error!("Container failed: {:?}", result);
+
             Err(anyhow!("Error while juicing: {}",
                         result.error.map_or_else(|| String::from("unknown"), |err| err.message)))
         } else {

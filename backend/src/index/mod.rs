@@ -19,7 +19,5 @@ pub struct SearchResponse {
 #[async_trait]
 pub trait Index {
     async fn index<'r>(&self, bundle: &Bundle<'r, Archived>) -> Result<()>;
-
     async fn search(&self, query: &str) -> Result<SearchResponse>;
-    async fn inbox(&self) -> Result<SearchResponse>;
 }

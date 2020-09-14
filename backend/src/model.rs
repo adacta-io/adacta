@@ -58,6 +58,12 @@ impl Kind {
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Label(String);
 
+impl std::fmt::Display for Label {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
 impl<S: Into<String>> From<S> for Label {
     fn from(s: S) -> Self { Self(s.into()) }
 }
