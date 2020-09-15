@@ -189,11 +189,11 @@ impl Repository {
 
     pub fn path(&self) -> &Path { return self.path.as_ref().as_ref(); }
 
-    pub fn inbox(&self) -> Inbox {
+    pub fn inbox(&self) -> Inbox<'_> {
         return Inbox(self);
     }
 
-    pub fn archive(&self) -> Archive {
+    pub fn archive(&self) -> Archive<'_> {
         return Archive(self);
     }
 

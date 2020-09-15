@@ -31,8 +31,6 @@ pub struct Token {
 pub struct Authenticator {
     passhash: String,
 
-    secret: String,
-
     jwt_decoding_key: DecodingKey<'static>,
     jwt_encoding_key: EncodingKey,
 
@@ -47,8 +45,6 @@ impl Authenticator {
 
         Ok(Self {
             passhash: config.passhash,
-
-            secret: config.secret.clone(),
 
             jwt_decoding_key: DecodingKey::from_secret(config.secret.as_bytes()).into_static(),
             jwt_encoding_key: EncodingKey::from_secret(config.secret.as_bytes()),
@@ -69,7 +65,7 @@ impl Authenticator {
         Ok(Token { private: () })
     }
 
-    pub async fn sign_token(&self, token: &Token) -> Result<String> {
+    pub async fn sign_token(&self, _: &Token) -> Result<String> {
         let bearer = jsonwebtoken::encode(
             &jsonwebtoken::Header::default(),
             &Claims::new(self.jwt_token_duration),

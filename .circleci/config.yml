@@ -215,6 +215,9 @@ workflows:
       - proto-clippy:
           requires:
             - proto-build
+      - proto-test:
+          requires:
+            - proto-build
 
       - backend-build:
           requires:

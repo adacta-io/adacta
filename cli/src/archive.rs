@@ -34,16 +34,18 @@ pub async fn get(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result<
             _ => format!("{}.{}", id, kind),
         });
 
-    return Ok(Box::new(match target.as_str() {
+    match target.as_str() {
         "-" => {
-            client.archive_fragment(id, kind, tokio::io::stdout()).await?
+            client.archive_fragment(id, kind, tokio::io::stdout()).await?;
         }
 
         _ => {
             let target = tokio::fs::File::create(target).await?;
-            client.archive_fragment(id, kind, target).await?
+            client.archive_fragment(id, kind, target).await?;
         }
-    }));
+    };
+
+    return Ok(Box::new(()));
 }
 
 pub async fn search(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result<Box<dyn Output>> {

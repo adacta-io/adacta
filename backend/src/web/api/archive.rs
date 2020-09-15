@@ -50,13 +50,12 @@ pub(super) async fn fragment(id: DocId,
 
         return Ok(Content(content_type, file.into()));
     }).await
-        .map_err(|err| InternalError(err))?
+        .map_err(InternalError)?
         .ok_or_else(|| ApiError::not_found(format!("Fragment not found: {}/{}", id, fragment)));
 }
 
 #[get("/archive?<query>")]
 pub(super) async fn search(query: &RawStr,
-                           repository: State<'_, Repository>,
                            index: State<'_, Box<dyn Index + Send + Sync>>,
                            _token: &'_ Token) -> Result<Json<SearchResponse>, ApiError> {
     let response = index.search(query).await?;

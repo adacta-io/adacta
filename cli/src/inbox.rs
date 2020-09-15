@@ -23,6 +23,7 @@ pub async fn exec(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result
 
 pub async fn list(_: &clap::ArgMatches<'_>, client: &mut Client) -> Result<Box<dyn Output>> {
     let response = client.inbox_list().await?;
+
     return Ok(Box::new(response));
 }
 
@@ -30,14 +31,16 @@ pub async fn show(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result
     let id = matches.value_of("id").expect("Required ID missing");
 
     let response = client.inbox_get(id).await?;
+
     return Ok(Box::new(response));
 }
 
 pub async fn delete(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result<Box<dyn Output>> {
     let id = matches.value_of("id").expect("Required ID missing");
 
-    let response = client.inbox_delete(id).await?;
-    return Ok(Box::new(response));
+    client.inbox_delete(id).await?;
+
+    return Ok(Box::new(()));
 }
 
 pub async fn archive(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result<Box<dyn Output>> {
@@ -57,8 +60,9 @@ pub async fn archive(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Res
         properties,
     };
 
-    let response = client.inbox_archive(id, &data).await?;
-    return Ok(Box::new(response));
+    client.inbox_archive(id, &data).await?;
+
+    return Ok(Box::new(()));
 }
 
 impl SimpleOutput for ListResponse {

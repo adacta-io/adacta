@@ -182,7 +182,7 @@ mod api {
         use tokio::time::Duration;
 
         use crate::meta::Metadata;
-        use crate::model::{DocId, Kind, Label};
+        use crate::model::{Kind, Label};
 
         use super::*;
 
@@ -194,10 +194,10 @@ mod api {
             let ids = tokio::time::throttle(Duration::from_millis(10),
                                             stream::iter(0..13usize))
                 .then(|_| async {
-                    server.repository
+                    *server.repository
                         .stage().await.expect("Staging Bundle")
                         .create().await.expect("Creating Bundle")
-                        .id().clone()
+                        .id()
                 }).collect::<Vec<_>>().await;
 
             let client = server.client().await;
@@ -222,10 +222,10 @@ mod api {
                 let staging = server.repository.stage().await.unwrap();
 
                 staging.write(Kind::Document).await.unwrap()
-                    .write_all("".as_bytes()).await.unwrap();
+                    .write_all(b"").await.unwrap();
 
                 staging.write(Kind::Plaintext).await.unwrap()
-                    .write_all("my document plaintext".as_bytes()).await.unwrap();
+                    .write_all(b"my document plaintext").await.unwrap();
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
@@ -265,10 +265,10 @@ mod api {
                 let staging = server.repository.stage().await.unwrap();
 
                 staging.write(Kind::Document).await.unwrap()
-                    .write_all("".as_bytes()).await.unwrap();
+                    .write_all(b"").await.unwrap();
 
                 staging.write(Kind::Plaintext).await.unwrap()
-                    .write_all("my document plaintext".as_bytes()).await.unwrap();
+                    .write_all(b"my document plaintext").await.unwrap();
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
@@ -297,10 +297,10 @@ mod api {
                 let staging = server.repository.stage().await.unwrap();
 
                 staging.write(Kind::Document).await.unwrap()
-                    .write_all("".as_bytes()).await.unwrap();
+                    .write_all(b"").await.unwrap();
 
                 staging.write(Kind::Plaintext).await.unwrap()
-                    .write_all("my document plaintext".as_bytes()).await.unwrap();
+                    .write_all(b"my document plaintext").await.unwrap();
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
@@ -358,10 +358,10 @@ mod api {
                 let staging = server.repository.stage().await.unwrap();
 
                 staging.write(Kind::Document).await.unwrap()
-                    .write_all("".as_bytes()).await.unwrap();
+                    .write_all(b"").await.unwrap();
 
                 staging.write(Kind::Plaintext).await.unwrap()
-                    .write_all("my document plaintext".as_bytes()).await.unwrap();
+                    .write_all(b"my document plaintext").await.unwrap();
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
@@ -395,10 +395,10 @@ mod api {
                 let staging = server.repository.stage().await.unwrap();
 
                 staging.write(Kind::Document).await.unwrap()
-                    .write_all("".as_bytes()).await.unwrap();
+                    .write_all(b"").await.unwrap();
 
                 staging.write(Kind::Plaintext).await.unwrap()
-                    .write_all("my document plaintext".as_bytes()).await.unwrap();
+                    .write_all(b"my document plaintext").await.unwrap();
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
@@ -419,7 +419,7 @@ mod api {
 
             assert_eq!(response.status(), Status::Ok);
 
-            assert_eq!(response.into_bytes().await.unwrap(), "my document plaintext".as_bytes());
+            assert_eq!(response.into_bytes().await.unwrap(), b"my document plaintext");
         }
 
         #[tokio::test]

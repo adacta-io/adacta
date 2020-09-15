@@ -80,10 +80,9 @@ impl Config {
                     .place_config_file("config.yaml")
                     .expect("Config file not writeable"));
 
-        let file = File::create(path)?;
-        let result = serde_yaml::to_writer(file, self)?;
+        serde_yaml::to_writer(File::create(path)?, self)?;
 
-        return Ok(result);
+        return Ok(());
     }
 }
 
