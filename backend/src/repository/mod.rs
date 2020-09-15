@@ -1,18 +1,19 @@
+use std::collections::{BinaryHeap, BTreeSet};
 use std::ffi::OsString;
+use std::future::Future;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use anyhow::Result;
+use futures::TryStreamExt;
 use log::info;
-use rocket::futures::Future;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncReadExt, AsyncWrite};
 
 use crate::config::Repository as Config;
 use crate::meta::Metadata;
 use crate::model::{DocId, Kind};
-use tokio::stream::StreamExt;
-use std::str::FromStr;
 
 trait Filename {
     fn filename(&self) -> OsString;
@@ -60,12 +61,17 @@ pub struct Inbox<'r>(&'r Repository);
 
 impl<'r> Inbox<'r> {
     pub async fn list(&self) -> Result<Vec<DocId>> {
-        return tokio::fs::read_dir(Inboxed::path(self.0)).await?
-            .map(|entry| {
-                let entry = entry?;
-                return Ok(DocId::from_str(entry.file_name().to_string_lossy().as_ref())?);
+        let list = tokio::fs::read_dir(Inboxed::path(self.0)).await?
+            .err_into::<anyhow::Error>()
+            .and_then(|entry| async move {
+                let time = entry.metadata().await?.modified()?;
+                let id = DocId::from_str(entry.file_name().to_string_lossy().as_ref())?;
+
+                return Ok((time, id));
             })
-            .collect::<Result<Vec<_>>>().await;
+            .try_collect::<BTreeSet<_>>().await?;
+
+        return Ok(list.into_iter().map(|(_, id)| id).collect());
     }
 
     pub async fn get(&self, id: DocId) -> Option<Bundle<'r, Inboxed>> {

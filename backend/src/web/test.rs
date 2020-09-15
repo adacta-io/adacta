@@ -185,28 +185,23 @@ mod api {
         use crate::model::{DocId, Kind, Label};
 
         use super::*;
+        use rocket::http::ext::IntoCollection;
+        use rocket::futures::{StreamExt, stream};
+        use tokio::time::Duration;
 
         #[tokio::test]
         async fn test_list() {
-            let mut server = Server::new().await;
+            let server = Server::new().await;
 
-            server.index.expect_inbox()
-                .times(1)
-                .return_once(|| Ok(SearchResponse {
-                    count: 5463,
-                    docs: vec![
-                        DocId::from_str("6x8SkvtXJNhsTv9Q9nPdmh").unwrap(),
-                        DocId::from_str("75KUW8tPUQNBS4W7ibFeY8").unwrap(),
-                        DocId::from_str("7CWWFLtFeS2VQCrqHQ7fJZ").unwrap(),
-                        DocId::from_str("7KhXzYt7pTgoNMDYrCyg4z").unwrap(),
-                        DocId::from_str("7StZjksyzVM7LVaGR1qgqR").unwrap(),
-                        DocId::from_str("7a5bUxsrAX1RJdvyyphhbr").unwrap(),
-                        DocId::from_str("7hGdEAsiLYfjGnHhYdZiNH").unwrap(),
-                        DocId::from_str("7pTeyNsaWaL3EveR7SRj8i").unwrap(),
-                        DocId::from_str("7wegiasSgbzMD518gFHju9").unwrap(),
-                        DocId::from_str("84qiTnsJrdefBDMrF49kfa").unwrap(),
-                    ]
-                }));
+            // Create bundles in inbox (with a short delay between each to have a unique timestamp)
+            let ids = tokio::time::throttle(Duration::from_millis(10),
+                                            stream::iter(0..13usize))
+                .then(|_| async {
+                    server.repository
+                        .stage().await.expect("Staging Bundle")
+                        .create().await.expect("Creating Bundle")
+                        .id().clone()
+                }).collect::<Vec<_>>().await;
 
             let client = server.client().await;
 
@@ -217,19 +212,8 @@ mod api {
             assert_eq!(response.status(), Status::Ok);
 
             assert_json_eq!(response.into_bytes().await.unwrap(), {
-                "count": 5463,
-                "docs": [
-                    "6x8SkvtXJNhsTv9Q9nPdmh",
-                    "75KUW8tPUQNBS4W7ibFeY8",
-                    "7CWWFLtFeS2VQCrqHQ7fJZ",
-                    "7KhXzYt7pTgoNMDYrCyg4z",
-                    "7StZjksyzVM7LVaGR1qgqR",
-                    "7a5bUxsrAX1RJdvyyphhbr",
-                    "7hGdEAsiLYfjGnHhYdZiNH",
-                    "7pTeyNsaWaL3EveR7SRj8i",
-                    "7wegiasSgbzMD518gFHju9",
-                    "84qiTnsJrdefBDMrF49kfa",
-                ],
+                "count": 13,
+                "docs": ids[0..10],
             });
         }
 
@@ -250,7 +234,7 @@ mod api {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
                     labels: Default::default(),
-                    properties: Default::default()
+                    properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 *staging.create().await.unwrap().id()
@@ -293,7 +277,7 @@ mod api {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
                     labels: Default::default(),
-                    properties: Default::default()
+                    properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 *staging.create().await.unwrap().id()
@@ -325,7 +309,7 @@ mod api {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
                     labels: Default::default(),
-                    properties: Default::default()
+                    properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 *staging.create().await.unwrap().id()
@@ -338,7 +322,7 @@ mod api {
             server.suggester.expect_train()
                 .with(mockall::predicate::eq("my document plaintext"),
                       mockall::predicate::eq(HashSet::from_iter(vec![Label::from("expected")])))
-                .returning(|_, _| Ok(()) );
+                .returning(|_, _| Ok(()));
 
             let client = server.client().await;
 
@@ -386,7 +370,7 @@ mod api {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
                     labels: Default::default(),
-                    properties: Default::default()
+                    properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 let inboxed = staging.create().await.unwrap();
@@ -423,7 +407,7 @@ mod api {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
                     labels: Default::default(),
-                    properties: Default::default()
+                    properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 let inboxed = staging.create().await.unwrap();

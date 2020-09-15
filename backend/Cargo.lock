@@ -15,6 +15,7 @@ dependencies = [
  "chrono",
  "clap",
  "elasticsearch",
+ "futures",
  "hyperx",
  "jsonwebtoken",
  "log",
