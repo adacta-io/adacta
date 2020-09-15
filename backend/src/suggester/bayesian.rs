@@ -5,11 +5,11 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use proto::model::Label;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
 use crate::config::BayesicSuggester as Config;
-use crate::model::Label;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Deserialize, Serialize)]
 struct Counter {
@@ -300,11 +300,11 @@ mod tests {
         ).await.unwrap();
 
         assert!(suggester.classifiers.read().await.get("Meat").unwrap()
-                       .classify(&Suggester::tokenize("salami")).abs() < f64::EPSILON);
+            .classify(&Suggester::tokenize("salami")).abs() < f64::EPSILON);
         assert!(suggester.classifiers.read().await.get("Foo").unwrap()
-                       .classify(&Suggester::tokenize("salami")).abs() < f64::EPSILON);
+            .classify(&Suggester::tokenize("salami")).abs() < f64::EPSILON);
         assert!((suggester.classifiers.read().await.get("Bar").unwrap()
-                       .classify(&Suggester::tokenize("salami")) - 1.0f64).abs() < f64::EPSILON);
+            .classify(&Suggester::tokenize("salami")) - 1.0f64).abs() < f64::EPSILON);
 
         assert_eq!(suggester.guess("salami pancetta beef ribs").await.unwrap(),
                    vec![Label::from("Meat"), Label::from("Foo"), Label::from("Bar")].into_iter().collect());

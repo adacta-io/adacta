@@ -19,7 +19,7 @@ pub async fn exec(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result
 
 impl SimpleOutput for UploadResponse {
     fn to_text(&self, w: &mut dyn Write) -> Result<()> {
-        writeln!(w, "Document {} uploaded", self.id.bright_cyan())?;
+        writeln!(w, "Document {} uploaded", self.id.to_string().bright_cyan())?;
 
         return Ok(());
     }

@@ -1,12 +1,11 @@
 use anyhow::Result;
 
-use crate::config::Web as Config;
-
 use crate::auth::Authenticator;
+use crate::config::Web as Config;
 use crate::index::Index;
 use crate::juicer::Juicer;
-use crate::suggester::Suggester;
 use crate::repository::Repository;
+use crate::suggester::Suggester;
 
 mod api;
 mod frontend;

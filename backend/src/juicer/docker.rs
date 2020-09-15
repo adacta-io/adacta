@@ -2,11 +2,11 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use bollard::{container, Docker};
 use bytes::Bytes;
-use log::{info, error};
+use log::{error, info};
+use proto::model::Kind;
 use tokio::stream::StreamExt;
 
 use crate::config::DockerJuicer as Config;
-use crate::model::Kind;
 use crate::repository::{Bundle, Staging};
 
 pub struct Juicer {

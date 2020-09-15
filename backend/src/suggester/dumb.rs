@@ -3,10 +3,10 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use proto::model::Label;
 use tokio::sync::RwLock;
 
 use crate::config::DumbSuggester as Config;
-use crate::model::Label;
 
 pub struct Suggester {
     path: PathBuf,

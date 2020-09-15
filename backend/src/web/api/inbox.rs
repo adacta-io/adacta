@@ -1,10 +1,13 @@
+use std::str::FromStr;
+
 use chrono::Utc;
 use proto::api::inbox::{ArchiveRequest, GetResponse, ListResponse};
+use proto::model::DocId;
 use rocket::{delete, get, post, State};
+use rocket::http::RawStr;
 use rocket_contrib::json::Json;
 
 use crate::index::Index;
-use crate::model::{DocId, Label};
 use crate::repository::Repository;
 use crate::suggester::Suggester;
 
@@ -17,15 +20,17 @@ pub(super) async fn list(repository: State<'_, Repository>,
 
     Ok(Json(ListResponse {
         count: docs.len() as u64,
-        docs: docs.iter().take(10).map(DocId::to_string).collect(),
+        docs: docs.iter().take(10).cloned().collect(),
     }))
 }
 
 #[get("/inbox/<id>")]
-pub(super) async fn get(id: DocId,
+pub(super) async fn get(id: &RawStr,
                         repository: State<'_, Repository>,
                         suggester: State<'_, Box<dyn Suggester + Send + Sync>>,
                         _token: &'_ Token) -> Result<Json<GetResponse>, ApiError> {
+    let id = DocId::from_str(id.as_str())?;
+
     let bundle = repository.inbox().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
@@ -36,17 +41,19 @@ pub(super) async fn get(id: DocId,
         .ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))?;
 
     return Ok(Json(GetResponse {
-        id: id.to_string(),
+        id,
         uploaded: metadata.uploaded,
-        labels: suggester.guess(&plaintext).await?.iter().map(Label::to_string).collect(),
+        labels: suggester.guess(&plaintext).await?,
         properties: metadata.properties,
     }));
 }
 
 #[delete("/inbox/<id>")]
-pub(super) async fn delete(id: DocId,
+pub(super) async fn delete(id: &RawStr,
                            repository: State<'_, Repository>,
                            _token: &'_ Token) -> Result<(), ApiError> {
+    let id = DocId::from_str(id.as_str())?;
+
     let bundle = repository.inbox().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
     bundle.delete().await?;
@@ -55,12 +62,14 @@ pub(super) async fn delete(id: DocId,
 }
 
 #[post("/inbox/<id>", data = "<data>")]
-pub(super) async fn archive(id: DocId,
+pub(super) async fn archive(id: &RawStr,
                             data: Json<ArchiveRequest>,
                             repository: State<'_, Repository>,
                             index: State<'_, Box<dyn Index + Send + Sync>>,
                             suggester: State<'_, Box<dyn Suggester + Send + Sync>>,
                             _token: &'_ Token) -> Result<(), ApiError> {
+    let id = DocId::from_str(id.as_str())?;
+
     let bundle = repository.inbox().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
@@ -69,7 +78,7 @@ pub(super) async fn archive(id: DocId,
         .ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))?;
 
     metadata.archived = Some(Utc::now());
-    metadata.labels = data.labels.iter().map(Label::from).collect();
+    metadata.labels = data.labels.clone();
     metadata.properties = data.properties.clone();
 
     bundle.write_metadata(&metadata).await?;

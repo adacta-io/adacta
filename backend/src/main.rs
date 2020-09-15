@@ -17,7 +17,6 @@ pub mod config;
 pub mod index;
 pub mod juicer;
 pub mod meta;
-pub mod model;
 pub mod suggester;
 pub mod repository;
 pub mod utils;

@@ -8,12 +8,12 @@ use std::str::FromStr;
 use anyhow::Result;
 use futures::TryStreamExt;
 use log::info;
+use proto::model::{DocId, Kind};
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncReadExt, AsyncWrite};
 
 use crate::config::Repository as Config;
 use crate::meta::Metadata;
-use crate::model::{DocId, Kind};
 
 trait Filename {
     fn filename(&self) -> OsString;

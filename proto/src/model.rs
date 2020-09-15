@@ -35,6 +35,27 @@ impl Serialize for DocId {
     }
 }
 
+impl <'de> Deserialize<'de> for DocId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where D: serde::de::Deserializer<'de> {
+        struct DocIdVisitor;
+
+        impl <'de> serde::de::Visitor<'de> for DocIdVisitor {
+            type Value = DocId;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("A base64 encoded document ID")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
+                Self::Value::from_str(value).map_err(serde::de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(DocIdVisitor)
+    }
+}
+
 impl std::fmt::Display for DocId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.to_base58())

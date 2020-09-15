@@ -1,20 +1,19 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
+use anyhow::{anyhow, Result};
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use elasticsearch::http::transport::Transport;
 use elasticsearch::{Elasticsearch, IndexParts, SearchParts};
+use elasticsearch::http::transport::Transport;
+use proto::model::{DocId, Label};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_json::value::{RawValue, Value};
 
-use anyhow::{anyhow, Result};
-use async_trait::async_trait;
-
 use crate::config::ElasticsearchIndex as Config;
 use crate::index::SearchResponse;
-use crate::model::{DocId, Label};
-use crate::repository::{Bundle, Archived};
+use crate::repository::{Archived, Bundle};
 
 const DOCUMENT_TYPE: &str = "document";
 
@@ -53,9 +52,9 @@ impl Index {
 
         // Execute the query
         let response = self.client
-                           .search(SearchParts::IndexType(&[&self.index], &[DOCUMENT_TYPE]))
-                           .body(query)
-                           .send().await?;
+            .search(SearchParts::IndexType(&[&self.index], &[DOCUMENT_TYPE]))
+            .body(query)
+            .send().await?;
 
         if !response.status_code().is_success() {
             return Err(anyhow!(
@@ -67,14 +66,14 @@ impl Index {
         let response = response.read_body::<Value>().await?;
 
         let count = response["hits"]["total"]["value"].as_u64()
-                                                      .expect("no usize");
+            .expect("no usize");
 
         let docs = response["hits"]["hits"].as_array()
-                                           .expect("no array")
-                                           .iter()
-                                           .map(|hit| hit["_id"].as_str().expect("no atr"))
-                                           .map(DocId::from_str)
-                                           .collect::<Result<Vec<_>>>()?;
+            .expect("no array")
+            .iter()
+            .map(|hit| hit["_id"].as_str().expect("no atr"))
+            .map(DocId::from_str)
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(SearchResponse { count, docs })
     }

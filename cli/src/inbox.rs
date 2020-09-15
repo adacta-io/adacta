@@ -47,7 +47,7 @@ pub async fn archive(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Res
     let id = matches.value_of("id").expect("Required ID missing");
 
     let labels = matches.values_of("labels")
-        .map(|labels| labels.map(str::to_string).collect())
+        .map(|labels| labels.map(|v| v.into()).collect())
         .unwrap_or_else(HashSet::default);
 
     // TODO: Custom typed parsers in clap?
@@ -73,7 +73,7 @@ impl SimpleOutput for ListResponse {
             writeln!(w, "{} documents in inbox", self.count.to_string().bright_yellow())?;
 
             for doc in &self.docs {
-                writeln!(w, "  {}", doc.bright_cyan())?;
+                writeln!(w, "  {}", doc.to_string().bright_cyan())?;
             }
         }
 
@@ -83,11 +83,11 @@ impl SimpleOutput for ListResponse {
 
 impl SimpleOutput for GetResponse {
     fn to_text(&self, w: &mut dyn Write) -> Result<()> {
-        writeln!(w, "Document {}:", self.id.bright_cyan())?;
+        writeln!(w, "Document {}:", self.id.to_string().bright_cyan())?;
         writeln!(w, "  Uploaded: {}", self.uploaded)?;
 
         if !self.labels.is_empty() {
-            writeln!(w, "  Labels: {}", ", ".join(self.labels.iter().map(|s| s.bright_purple())))?;
+            writeln!(w, "  Labels: {}", ", ".join(self.labels.iter().map(|s| s.to_string().bright_purple())))?;
         }
 
         if !self.properties.is_empty() {

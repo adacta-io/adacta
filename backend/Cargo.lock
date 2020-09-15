@@ -6,7 +6,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "base58",
  "base64 0.12.3",
  "bcrypt",
  "bincode",
@@ -1582,8 +1581,11 @@ dependencies = [
 name = "proto"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "base58",
  "chrono",
  "serde",
+ "uuid",
 ]
 
 [[package]]

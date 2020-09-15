@@ -2,10 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
+use proto::model::Label;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
-
-use crate::model::Label;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Metadata {

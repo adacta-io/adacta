@@ -1,13 +1,13 @@
 use anyhow::Context;
 use log::{info, trace};
 use proto::api::upload::UploadResponse;
+use proto::model::Kind;
 use rocket::{Data, post, State};
 use rocket::data::ToByteUnit;
 use rocket_contrib::json::Json;
 
 use crate::juicer::Juicer;
 use crate::meta::Metadata;
-use crate::model::Kind;
 use crate::repository::Repository;
 
 use super::{ApiError, Token};
@@ -49,7 +49,7 @@ pub(super) async fn upload_pdf(data: Data,
             let bundle = staging.create().await?;
 
             return Ok(Json(UploadResponse {
-                id: bundle.id().to_string(),
+                id: *bundle.id(),
             }));
         }
         Err(err) => {

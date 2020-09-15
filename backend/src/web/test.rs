@@ -177,12 +177,12 @@ mod api {
         use std::iter::FromIterator;
 
         use chrono::{DateTime, NaiveDateTime, Utc};
+        use proto::model::{Kind, Label};
         use rocket::futures::{stream, StreamExt};
         use tokio::io::AsyncWriteExt;
         use tokio::time::Duration;
 
         use crate::meta::Metadata;
-        use crate::model::{Kind, Label};
 
         use super::*;
 
@@ -342,11 +342,11 @@ mod api {
         use std::str::FromStr;
 
         use chrono::{DateTime, NaiveDateTime, Utc};
+        use proto::model::{DocId, Kind};
         use rocket::tokio::io::AsyncWriteExt;
 
         use crate::index::SearchResponse;
         use crate::meta::Metadata;
-        use crate::model::{DocId, Kind};
 
         use super::*;
 
