@@ -1,5 +1,66 @@
 version: 2.1
 
+commands:
+  rust-build:
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Version information
+          command: |
+            rustup --version
+            rustc --version
+            cargo --version
+      - restore_cache:
+          key: adacta-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: "Build"
+          command: |
+            cargo build --release --all --all-targets
+      - save_cache:
+          key: adacta-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+          paths:
+            - /usr/local/cargo/registry
+            - ./target
+
+  rust-check:
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - restore_cache:
+          key: adacta-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: "Check"
+          command: |
+            cargo check --all --all-targets
+
+  rust-clippy:
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - restore_cache:
+          key: adacta-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: "Clippy"
+          working_directory: ./backend
+          command: |
+            cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms \
+              -A clippy::needless_return \
+              -A clippy::module_name_repetitions \
+              -A clippy::needless_lifetimes \
+  
+  rust-test:
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - restore_cache:
+          key: adacta-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
+      - run:
+          name: "Test"
+          command: |
+            cargo test --release --all --all-targets
+
+
 jobs:
   checkout:
     docker:
@@ -11,7 +72,7 @@ jobs:
           root: ~/project
           paths: ./*
 
-  frontend_build:
+  frontend-build:
     docker:
       - image: circleci/node:12
     working_directory: ~/project/frontend
@@ -38,104 +99,148 @@ jobs:
       - persist_to_workspace:
           root: ~/project
           paths: ./frontend/dist/adacta/*
-
-  backend_check:
-    docker:
-      - image: rustlang/rust:nightly
-    working_directory: ~/project/backend
-    steps:
-      - attach_workspace:
-          at: ~/project
-      - restore_cache:
-          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
-      - run:
-          name: "Check"
-          command: |
-            cargo check --all --all-targets
-
-  backend_clippy:
-    docker:
-      - image: rustlang/rust:nightly
-    working_directory: ~/project/backend
-    steps:
-      - attach_workspace:
-          at: ~/project
-      - restore_cache:
-          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
-      - run:
-          name: "Clippy"
-          working_directory: ./backend
-          command: |
-            cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms \
-              -A clippy::needless_return \
-              -A clippy::module_name_repetitions \
-              -A clippy::needless_lifetimes \
   
-  backend_format:
+  proto-build:
     docker:
       - image: rustlang/rust:nightly
-    working_directory: ~/project/backend
+    working_directory: ~/project/proto
     steps:
-      - attach_workspace:
-          at: ~/project
-      - restore_cache:
-          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
-      - run:
-          name: "Format"
-          working_directory: ./backend
-          command: |
-            cargo fmt --all -- --check
+      - rust-build
 
-  backend_build:
+  proto-check:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/proto
+    steps:
+      - rust-check
+
+  proto-clippy:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/proto
+    steps:
+      - rust-clippy
+
+  proto-test:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/proto
+    steps:
+      - rust-test
+
+  backend-build:
     docker:
       - image: rustlang/rust:nightly
     working_directory: ~/project/backend
     steps:
-      - attach_workspace:
-          at: ~/project
-      - run:
-          name: Version information
-          command: |
-            rustup --version
-            rustc --version
-            cargo --version
-      - restore_cache:
-          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
-      - run:
-          name: "Build"
-          command: |
-            cargo build --release --all --all-targets
-      - save_cache:
-          key: adacta-backend-cargo-{{ arch }}-{{ checksum "Cargo.lock" }}
-          paths:
-            - /usr/local/cargo/registry
-            - ./target
+      - rust-build
       - persist_to_workspace:
-          root: ~/project
+          root: ~/project/
           paths: ./backend/target/release/adacta
       - store_artifacts:
           path: ~/project/backend/target/release/adacta
-          destination: ""
+          destination: "Adacata Backend"
+
+  backend-check:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/backend
+    steps:
+      - rust-check
+
+  backend-clippy:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/backend
+    steps:
+      - rust-clippy
+
+  backend-test:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/backend
+    steps:
+      - rust-test
+
+  cli-build:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/cli
+    steps:
+      - rust-build
+      - persist_to_workspace:
+          root: ~/project
+          paths: ./cli/target/release/adacta-cli
+      - store_artifacts:
+          path: ~/project/cli/target/release/adacta-cli
+          destination: "Adacata CLI"
+
+  cli-check:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/cli
+    steps:
+      - rust-check
+
+  cli-clippy:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/cli
+    steps:
+      - rust-clippy
+
+  cli-test:
+    docker:
+      - image: rustlang/rust:nightly
+    working_directory: ~/project/cli
+    steps:
+      - rust-test
 
 
 workflows:
   commit:
     jobs:
       - checkout
-      - frontend_build:
-          requires:
-            - checkout
-      - backend_build:
-          requires:
-            - checkout
-            - frontend_build
-      - backend_check:
-          requires:
-            - backend_build
-      - backend_clippy:
-          requires:
-            - backend_build
-      - backend_format:
-          requires:
-            - backend_build
 
+      - frontend-build:
+          requires:
+            - checkout
+
+      - proto-build:
+          requires:
+            - checkout
+      - proto-check:
+          requires:
+            - proto-build
+      - proto-clippy:
+          requires:
+            - proto-build
+
+      - backend-build:
+          requires:
+            - checkout
+            - frontend-build
+            - proto-build
+      - backend-check:
+          requires:
+            - backend-build
+      - backend-clippy:
+          requires:
+            - backend-build
+      - backend-test:
+          requires:
+            - backend-build
+
+      - cli-build:
+          requires:
+            - checkout
+            - proto-build
+      - cli-check:
+          requires:
+            - cli-build
+      - cli-clippy:
+          requires:
+            - cli-build
+      - cli-test:
+          requires:
+            - cli-build

@@ -1,4 +1,4 @@
-use std::collections::{BinaryHeap, BTreeSet};
+use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::future::Future;
 use std::marker::PhantomData;
@@ -92,7 +92,7 @@ impl<'r> Inbox<'r> {
 
 pub struct Archive<'r>(&'r Repository);
 
-impl<'r>  Archive<'r> {
+impl<'r> Archive<'r> {
     pub async fn get(&self, id: DocId) -> Option<Bundle<'r, Archived>> {
         let bundle = Bundle {
             id,

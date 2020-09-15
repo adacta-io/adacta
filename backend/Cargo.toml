@@ -37,7 +37,7 @@ jsonwebtoken = "7.1"
 bincode = "1.2"
 hyperx = "1.1.0"
 log = "0.4.11"
-proto = { path = "proto" }
+proto = { path = "../proto" }
 
 [dev-dependencies]
 tempfile = "3.1.0"

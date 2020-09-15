@@ -175,19 +175,16 @@ mod api {
     mod inbox {
         use std::collections::HashSet;
         use std::iter::FromIterator;
-        use std::str::FromStr;
 
         use chrono::{DateTime, NaiveDateTime, Utc};
+        use rocket::futures::{stream, StreamExt};
         use tokio::io::AsyncWriteExt;
+        use tokio::time::Duration;
 
-        use crate::index::SearchResponse;
         use crate::meta::Metadata;
         use crate::model::{DocId, Kind, Label};
 
         use super::*;
-        use rocket::http::ext::IntoCollection;
-        use rocket::futures::{StreamExt, stream};
-        use tokio::time::Duration;
 
         #[tokio::test]
         async fn test_list() {
