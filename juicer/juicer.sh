@@ -20,4 +20,4 @@ else
 fi
 
 # Extract preview
-pdftoppm 'document.pdf' 'preview.png' -png -f 1 -singlefile
+pdftoppm 'document.pdf' 'preview' -png -f 1 -singlefile
