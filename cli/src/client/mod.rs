@@ -70,13 +70,26 @@ impl Client {
         return Ok(response.json().await?);
     }
 
-    pub async fn inbox_get(&mut self, id: &str) -> Result<inbox::GetResponse> {
+    pub async fn inbox_bundle(&mut self, id: &str) -> Result<inbox::GetResponse> {
         let request = self.request(Method::GET, &format!("/inbox/{}", id))?;
 
         let response = self.session.send(request).await?
             .error_for_status()?;
 
         return Ok(response.json().await?);
+    }
+
+    pub async fn inbox_fragment(&mut self, id: &str, kind: &str, w: impl AsyncWrite + Send + Sync + 'static) -> Result<()> {
+        let request = self.request(Method::GET, &format!("/inbox/{}/{}", id, kind))?;
+
+        let response = self.session.send(request).await?
+            .error_for_status()?;
+
+        let w = FramedWrite::new(w, BytesCodec::new());
+
+        return response.bytes_stream()
+            .err_into()
+            .forward(w.sink_err_into()).await;
     }
 
     pub async fn inbox_delete(&mut self, id: &str) -> Result<()> {

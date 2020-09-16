@@ -76,6 +76,20 @@ impl Kind {
     pub fn other(name: impl Into<OsString>) -> Self { Self::Other { name: name.into() } }
 }
 
+impl<S: Into<String>> From<S> for Kind {
+    fn from(fragment: S) -> Self {
+        let fragment = fragment.into();
+        return match fragment.as_str() {
+            "document" => Kind::Document,
+            "preview" => Kind::Preview,
+            "plaintext" => Kind::Plaintext,
+            "metadata" => Kind::Metadata,
+            "process_log" => Kind::ProcessLog,
+            s => Kind::other(s),
+        };
+    }
+}
+
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Label(String);
 

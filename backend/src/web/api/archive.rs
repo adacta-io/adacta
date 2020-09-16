@@ -31,15 +31,7 @@ pub(super) async fn fragment(id: &RawStr,
                              repository: State<'_, Repository>,
                              _token: &'_ Token) -> Result<Content<Stream<impl AsyncRead>>, ApiError> {
     let id = DocId::from_str(id.as_str())?;
-
-    let kind = match fragment.as_str() {
-        "document" => Kind::Document,
-        "preview" => Kind::Preview,
-        "plaintext" => Kind::Plaintext,
-        "metadata" => Kind::Metadata,
-        "process_log" => Kind::ProcessLog,
-        s => Kind::other(s),
-    };
+    let kind = Kind::from(fragment.as_str());
 
     let bundle = repository.archive().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;

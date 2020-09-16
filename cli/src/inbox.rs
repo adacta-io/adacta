@@ -13,6 +13,7 @@ pub async fn exec(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result
     return match matches.subcommand() {
         ("list", Some(matches)) => list(matches, client).await,
         ("show", Some(matches)) => show(matches, client).await,
+        ("get", Some(matches)) => get(matches, client).await,
         ("delete", Some(matches)) => delete(matches, client).await,
         ("archive", Some(matches)) => archive(matches, client).await,
 
@@ -30,9 +31,33 @@ pub async fn list(_: &clap::ArgMatches<'_>, client: &mut Client) -> Result<Box<d
 pub async fn show(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result<Box<dyn Output>> {
     let id = matches.value_of("id").expect("Required ID missing");
 
-    let response = client.inbox_get(id).await?;
+    let response = client.inbox_bundle(id).await?;
 
     return Ok(Box::new(response));
+}
+
+pub async fn get(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result<Box<dyn Output>> {
+    let id = matches.value_of("id").expect("Required ID missing");
+    let kind = matches.value_of("kind").expect("Required kind missing");
+
+    let target = matches.value_of("target").map(str::to_string)
+        .unwrap_or_else(|| match kind {
+            "document" => format!("{}.pdf", id),
+            _ => format!("{}.{}", id, kind),
+        });
+
+    match target.as_str() {
+        "-" => {
+            client.inbox_fragment(id, kind, tokio::io::stdout()).await?;
+        }
+
+        _ => {
+            let target = tokio::fs::File::create(target).await?;
+            client.inbox_fragment(id, kind, target).await?;
+        }
+    };
+
+    return Ok(Box::new(()));
 }
 
 pub async fn delete(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result<Box<dyn Output>> {
