@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::model::*;
@@ -19,7 +18,7 @@ pub mod upload {
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct UploadResponse {
-        pub id: DocId,
+        pub doc: DocInfo,
     }
 }
 
@@ -29,15 +28,13 @@ pub mod inbox {
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct ListResponse {
         pub count: u64,
-        pub docs: Vec<DocId>,
+        pub docs: Vec<DocInfo>,
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct GetResponse {
-        pub id: DocId,
-        pub uploaded: DateTime<Utc>,
+        pub doc: DocInfo,
         pub labels: HashSet<Label>,
-        pub properties: HashMap<String, String>,
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,16 +49,12 @@ pub mod archive {
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct BundleResponse {
-        pub id: DocId,
-        //    created: DateTime<Utc>,
-        //    modified: DateTime<Utc>,
-
-        // Other metadata...
+        pub doc: DocInfo,
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct SearchResponse {
         pub count: u64,
-        pub docs: Vec<DocId>,
+        pub docs: Vec<DocInfo>,
     }
 }

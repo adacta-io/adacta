@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow::anyhow;
 use proto::api::archive::{BundleResponse, SearchResponse};
 use proto::model::{DocId, Kind};
 use rocket::{get, http::ContentType, State};
@@ -22,7 +23,11 @@ pub(super) async fn bundle(id: &RawStr,
     let bundle = repository.archive().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
-    Ok(Json(BundleResponse { id: *bundle.id() }))
+    let metadata = bundle.metadata().await?;
+
+    Ok(Json(BundleResponse {
+        doc: (id, metadata).into(),
+    }))
 }
 
 #[get("/archive/<id>/<fragment>")]
@@ -55,11 +60,23 @@ pub(super) async fn fragment(id: &RawStr,
 #[get("/archive?<query>")]
 pub(super) async fn search(query: &RawStr,
                            index: State<'_, Box<dyn Index + Send + Sync>>,
+                           repository: State<'_, Repository>,
                            _token: &'_ Token) -> Result<Json<SearchResponse>, ApiError> {
     let response = index.search(query).await?;
 
+    // TODO: Can this be a done as stream?
+    let mut docs = Vec::new();
+    for id in response.docs {
+        let bundle = repository.archive().get(id).await
+            .ok_or_else(|| anyhow!("Bundle missing: {}", id))?;
+
+        let metadata = bundle.metadata().await?;
+
+        docs.push((*bundle.id(), metadata).into());
+    }
+
     Ok(Json(SearchResponse {
         count: response.count,
-        docs: response.docs,
+        docs,
     }))
 }

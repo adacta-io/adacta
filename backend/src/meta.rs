@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::num::NonZeroU32;
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
@@ -11,6 +12,9 @@ pub struct Metadata {
     pub uploaded: DateTime<Utc>,
     pub archived: Option<DateTime<Utc>>,
 
+    pub title: Option<String>,
+    pub pages: Option<NonZeroU32>,
+
     pub labels: HashSet<Label>,
 
     pub properties: HashMap<String, String>,
@@ -21,6 +25,8 @@ impl Metadata {
         Self {
             uploaded: Utc::now(),
             archived: None,
+            title: None,
+            pages: None,
             labels: HashSet::new(),
             properties: HashMap::new(),
         }
@@ -44,4 +50,17 @@ impl Metadata {
 
 impl Default for Metadata {
     fn default() -> Self { Self::new() }
+}
+
+impl Into<proto::model::Metadata> for Metadata {
+    fn into(self) -> proto::model::Metadata {
+        return proto::model::Metadata {
+            uploaded: self.uploaded,
+            archived: self.archived,
+            title: self.title,
+            pages: self.pages,
+            labels: self.labels,
+            properties: self.properties,
+        };
+    }
 }

@@ -1,7 +1,7 @@
 use anyhow::Context;
 use log::{info, trace};
 use proto::api::upload::UploadResponse;
-use proto::model::Kind;
+use proto::model::{Kind, DocInfo};
 use rocket::{Data, post, State};
 use rocket::data::ToByteUnit;
 use rocket_contrib::json::Json;
@@ -47,9 +47,13 @@ pub(super) async fn upload_pdf(data: Data,
         Ok(()) => {
             // Make a inboxed bundle from the staging
             let bundle = staging.create().await?;
+            let metadata = bundle.metadata().await?;
 
             return Ok(Json(UploadResponse {
-                id: *bundle.id(),
+                doc: DocInfo {
+                    id: *bundle.id(),
+                    metadata: metadata.into(),
+                }
             }));
         }
         Err(err) => {

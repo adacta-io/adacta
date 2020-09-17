@@ -1,11 +1,11 @@
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use futures::TryStreamExt;
 use log::info;
 use proto::model::{DocId, Kind};
@@ -60,16 +60,22 @@ pub struct Repository {
 pub struct Inbox<'r>(&'r Repository);
 
 impl<'r> Inbox<'r> {
-    pub async fn list(&self) -> Result<Vec<DocId>> {
+    pub async fn list(&self) -> Result<Vec<Bundle<'r, Inboxed>>> {
         let list = tokio::fs::read_dir(Inboxed::path(self.0)).await?
             .err_into::<anyhow::Error>()
             .and_then(|entry| async move {
                 let time = entry.metadata().await?.modified()?;
-                let id = DocId::from_str(entry.file_name().to_string_lossy().as_ref())?;
 
-                return Ok((time, id));
+                let id = DocId::from_str(entry.file_name().to_string_lossy().as_ref())?;
+                let bundle = Bundle {
+                    id,
+                    repository: &self.0,
+                    state: PhantomData::default(),
+                };
+
+                return Ok((time, bundle));
             })
-            .try_collect::<BTreeSet<_>>().await?;
+            .try_collect::<BTreeMap<_, _>>().await?;
 
         return Ok(list.into_iter().map(|(_, id)| id).collect());
     }
@@ -157,19 +163,21 @@ impl<State: BundleState> Bundle<'_, State> {
         }
     }
 
-    pub async fn plaintext(&self) -> Result<Option<String>> {
+    pub async fn plaintext(&self) -> Result<String> {
         return self.with_fragment(Kind::Plaintext, |mut file, _| async move {
             let mut buffer = String::new();
             file.read_to_string(&mut buffer).await?;
 
             Ok(buffer)
-        }).await;
+        }).await
+            .and_then(|plaintext| plaintext.ok_or_else(|| anyhow!("Plaintext missing in bundle: {}", self.id)));
     }
 
-    pub async fn metadata(&self) -> Result<Option<Metadata>> {
+    pub async fn metadata(&self) -> Result<Metadata> {
         return self.with_fragment(Kind::Metadata, |file, _| async move {
             Metadata::load(file).await
-        }).await;
+        }).await
+            .and_then(|metadata| metadata.ok_or_else(|| anyhow!("Metadata missing in bundle: {}", self.id)));
     }
 }
 

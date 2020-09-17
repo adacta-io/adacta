@@ -1,8 +1,10 @@
 use std::str::FromStr;
 
+use anyhow::Result;
 use chrono::Utc;
+use futures::{StreamExt, TryStreamExt};
 use proto::api::inbox::{ArchiveRequest, GetResponse, ListResponse};
-use proto::model::{DocId, Kind};
+use proto::model::{DocId, DocInfo, Kind};
 use rocket::{delete, get, post, State};
 use rocket::http::{ContentType, RawStr};
 use rocket::response::{Content, Stream};
@@ -19,11 +21,21 @@ use super::{ApiError, Token};
 #[get("/inbox")]
 pub(super) async fn list(repository: State<'_, Repository>,
                          _token: &'_ Token) -> Result<Json<ListResponse>, ApiError> {
-    let docs = repository.inbox().list().await?;
+    let bundles = repository.inbox().list().await?;
+
+    let docs = tokio::stream::iter(bundles.iter())
+        .take(10)
+        .then(|bundle| async move {
+            return bundle.metadata().await
+                .map(|metadata| DocInfo {
+                    id: *bundle.id(),
+                    metadata: metadata.into(),
+                });
+        });
 
     Ok(Json(ListResponse {
-        count: docs.len() as u64,
-        docs: docs.iter().take(10).cloned().collect(),
+        count: bundles.len() as u64,
+        docs: docs.try_collect().await?,
     }))
 }
 
@@ -37,17 +49,14 @@ pub(super) async fn bundle(id: &RawStr,
     let bundle = repository.inbox().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
-    let metadata = bundle.metadata().await?
-        .ok_or_else(|| ApiError::not_found(format!("Metadata not found: {}", id)))?;
+    let metadata = bundle.metadata().await?;
+    let plaintext = bundle.plaintext().await?;
 
-    let plaintext = bundle.plaintext().await?
-        .ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))?;
+    let labels = suggester.guess(&plaintext).await?;
 
     return Ok(Json(GetResponse {
-        id,
-        uploaded: metadata.uploaded,
-        labels: suggester.guess(&plaintext).await?,
-        properties: metadata.properties,
+        doc: (id, metadata).into(),
+        labels,
     }));
 }
 
@@ -104,8 +113,7 @@ pub(super) async fn archive(id: &RawStr,
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
     // Update the metadata
-    let mut metadata = bundle.metadata().await?
-        .ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))?;
+    let mut metadata = bundle.metadata().await?;
 
     metadata.archived = Some(Utc::now());
     metadata.labels = data.labels.clone();
@@ -120,8 +128,7 @@ pub(super) async fn archive(id: &RawStr,
     index.index(&archived).await?;
 
     // Train the suggester with the final labels
-    let plaintext = archived.plaintext().await?
-        .ok_or_else(|| ApiError::not_found(format!("Plaintext not found: {}", id)))?;
+    let plaintext = archived.plaintext().await?;
 
     suggester.train(&plaintext, &metadata.labels).await?;
 

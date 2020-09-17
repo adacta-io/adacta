@@ -1,12 +1,14 @@
 use std::borrow::Borrow;
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
+use std::num::NonZeroU32;
 use std::str::FromStr;
 
+use anyhow::{anyhow, Error};
 use base58::{FromBase58, ToBase58};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize, Serializer};
 use uuid::Uuid;
-
-use anyhow::{anyhow, Error};
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct DocId(Uuid);
@@ -30,17 +32,17 @@ impl FromStr for DocId {
 
 impl Serialize for DocId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer {
+        where S: Serializer {
         serializer.serialize_str(&self.to_string())
     }
 }
 
-impl <'de> Deserialize<'de> for DocId {
+impl<'de> Deserialize<'de> for DocId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where D: serde::de::Deserializer<'de> {
+        where D: serde::de::Deserializer<'de> {
         struct DocIdVisitor;
 
-        impl <'de> serde::de::Visitor<'de> for DocIdVisitor {
+        impl<'de> serde::de::Visitor<'de> for DocIdVisitor {
             type Value = DocId;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -109,4 +111,34 @@ impl Borrow<String> for Label {
 
 impl Borrow<str> for Label {
     fn borrow(&self) -> &str { &self.0 }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+pub struct Metadata {
+    pub uploaded: DateTime<Utc>,
+    pub archived: Option<DateTime<Utc>>,
+
+    pub title: Option<String>,
+    pub pages: Option<NonZeroU32>,
+
+    pub labels: HashSet<Label>,
+
+    pub properties: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DocInfo {
+    pub id: DocId,
+    pub metadata: Metadata,
+}
+
+impl<D, M> From<(D, M)> for DocInfo
+    where D: Into<DocId>,
+          M: Into<Metadata> {
+    fn from((id, metadata): (D, M)) -> Self {
+        return Self {
+            id: id.into(),
+            metadata: metadata.into(),
+        };
+    }
 }

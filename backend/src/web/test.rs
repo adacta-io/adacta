@@ -230,6 +230,8 @@ mod api {
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
+                    pages: None,
+                    title: None,
                     labels: Default::default(),
                     properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
@@ -273,6 +275,8 @@ mod api {
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
+                    pages: None,
+                    title: None,
                     labels: Default::default(),
                     properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
@@ -305,6 +309,8 @@ mod api {
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
+                    pages: None,
+                    title: None,
                     labels: Default::default(),
                     properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
@@ -366,6 +372,8 @@ mod api {
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
+                    pages: None,
+                    title: None,
                     labels: Default::default(),
                     properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
@@ -403,6 +411,8 @@ mod api {
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
                     archived: None,
+                    pages: None,
+                    title: None,
                     labels: Default::default(),
                     properties: Default::default(),
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
