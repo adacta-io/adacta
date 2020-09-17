@@ -73,7 +73,7 @@ impl<'r> Inbox<'r> {
                     state: PhantomData::default(),
                 };
 
-                return Ok((time, bundle));
+                return Ok(((time, bundle.id), bundle));
             })
             .try_collect::<BTreeMap<_, _>>().await?;
 
