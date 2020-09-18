@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::num::NonZeroU32;
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
@@ -13,7 +12,7 @@ pub struct Metadata {
     pub archived: Option<DateTime<Utc>>,
 
     pub title: Option<String>,
-    pub pages: Option<NonZeroU32>,
+    pub pages: u32,
 
     pub labels: HashSet<Label>,
 
@@ -26,7 +25,7 @@ impl Metadata {
             uploaded: Utc::now(),
             archived: None,
             title: None,
-            pages: None,
+            pages: 0,
             labels: HashSet::new(),
             properties: HashMap::new(),
         }

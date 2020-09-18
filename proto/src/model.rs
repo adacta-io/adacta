@@ -1,7 +1,6 @@
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
-use std::num::NonZeroU32;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Error};
@@ -119,7 +118,7 @@ pub struct Metadata {
     pub archived: Option<DateTime<Utc>>,
 
     pub title: Option<String>,
-    pub pages: Option<NonZeroU32>,
+    pub pages: u32,
 
     pub labels: HashSet<Label>,
 

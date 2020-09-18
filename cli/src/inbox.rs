@@ -3,7 +3,6 @@ use std::io::Write;
 
 use anyhow::Result;
 use colored::Colorize;
-use join_lazy_fmt::Join;
 use proto::api::inbox::{ArchiveRequest, GetResponse, ListResponse};
 
 use crate::client::Client;
@@ -93,12 +92,12 @@ pub async fn archive(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Res
 impl SimpleOutput for ListResponse {
     fn to_text(&self, w: &mut dyn Write) -> Result<()> {
         if self.count == 0 {
-            writeln!(w, "{}", "Inbox is empty".bright_green())?;
+            writeln!(w, "{} {}", "✓".bright_green(), "No documents pending in inbox".green())?;
         } else {
-            writeln!(w, "{} documents in inbox", self.count.to_string().bright_yellow())?;
+            writeln!(w, "{} {}", "📥".bright_yellow(), format!("{} documents pending in inbox", self.count).yellow())?;
 
             for doc in &self.docs {
-                writeln!(w, "  {}", doc.id.to_string().bright_cyan())?;
+                writeln!(w, "    {} {} {}", "·".white(), "📄".bright_cyan(), doc.id.to_string().cyan())?;
             }
         }
 
@@ -108,22 +107,11 @@ impl SimpleOutput for ListResponse {
 
 impl SimpleOutput for GetResponse {
     fn to_text(&self, w: &mut dyn Write) -> Result<()> {
-        writeln!(w, "Document {}:", self.doc.id.to_string().bright_cyan())?;
-        writeln!(w, "  Uploaded: {}", self.doc.metadata.uploaded)?;
+        SimpleOutput::to_text(&self.doc, w)?;
 
-        if !self.labels.is_empty() {
-            writeln!(w, "  Labels: {}", ", ".join(self.labels.iter().map(|s| s.to_string().bright_blue())))?;
-        }
-
-        if !self.doc.metadata.labels.is_empty() {
-            writeln!(w, "  Labels: {}", ", ".join(self.labels.iter().map(|s| s.to_string().bright_purple())))?;
-        }
-
-        if !self.doc.metadata.properties.is_empty() {
-            writeln!(w, "  Properties: ")?;
-            for (key, val) in &self.doc.metadata.properties {
-                writeln!(w, "  {}: {}", key, val.bright_blue())?;
-            }
+        writeln!(w, "    {}:", "Suggested Labels".bold())?;
+        for suggestion in self.suggestions.iter() {
+            writeln!(w, "        {} {}", "-".white(), suggestion)?;
         }
 
         return Ok(());

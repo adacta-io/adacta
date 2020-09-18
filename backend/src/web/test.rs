@@ -222,7 +222,7 @@ mod api {
                     "metadata": {
                         "archived": (),
                         "uploaded": "2001-09-09T01:46:40Z",
-                        "pages": (),
+                        "pages": 0,
                         "title": (),
                         "labels": [],
                         "properties": {},
@@ -269,7 +269,7 @@ mod api {
                 "metadata": {
                     "archived": (),
                     "uploaded": "2001-09-09T01:46:40Z",
-                    "pages": (),
+                    "pages": 0,
                     "title": (),
                     "labels": [],
                     "properties": {},
@@ -403,7 +403,7 @@ mod api {
                     "uploaded": "2001-09-09T01:46:40Z",
                     "archived": (),
                     "title": (),
-                    "pages": (),
+                    "pages": 0,
                     "labels": [],
                     "properties": {},
                 }
@@ -488,7 +488,7 @@ mod api {
                         "uploaded": "2001-09-09T01:46:40Z",
                         "archived": (),
                         "title": (),
-                        "pages": (),
+                        "pages": 0,
                         "labels": [],
                         "properties": {},
                     }

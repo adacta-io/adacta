@@ -57,7 +57,7 @@ pub async fn search(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Resu
 
 impl SimpleOutput for BundleResponse {
     fn to_text(&self, w: &mut dyn Write) -> Result<()> {
-        writeln!(w, "Document {}:", self.doc.id.to_string().bright_cyan())?;
+        SimpleOutput::to_text(&self.doc, w)?;
 
         return Ok(());
     }
@@ -66,11 +66,12 @@ impl SimpleOutput for BundleResponse {
 impl SimpleOutput for SearchResponse {
     fn to_text(&self, w: &mut dyn Write) -> Result<()> {
         if self.count == 0 {
-            writeln!(w, "{}", "No Documents found".bright_red())?;
+            writeln!(w, "{} {}", "❌".bright_red(), "No Documents found".red())?;
         } else {
-            writeln!(w, "{} Documents found:", self.count.to_string().bright_green())?;
+            writeln!(w, "{} {}", "🔎".bright_green(), format!("{} Documents found", self.count).green())?;
+
             for doc in &self.docs {
-                writeln!(w, "  {}", doc.id.to_string().bright_cyan())?;
+                writeln!(w, "    {} {} {}", "-".white(), "📄".bright_cyan(), doc.id.to_string().cyan())?;
             }
         }
 
