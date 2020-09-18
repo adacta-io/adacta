@@ -18,6 +18,7 @@ pub mod upload {
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct UploadResponse {
+        #[serde(flatten)]
         pub doc: DocInfo,
     }
 }
@@ -33,8 +34,9 @@ pub mod inbox {
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct GetResponse {
+        #[serde(flatten)]
         pub doc: DocInfo,
-        pub labels: HashSet<Label>,
+        pub suggestions: HashSet<Label>,
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,6 +51,7 @@ pub mod archive {
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct BundleResponse {
+        #[serde(flatten)]
         pub doc: DocInfo,
     }
 

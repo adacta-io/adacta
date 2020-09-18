@@ -177,8 +177,9 @@ mod api {
         use std::iter::FromIterator;
 
         use chrono::{DateTime, NaiveDateTime, Utc};
+        use futures::{stream, StreamExt};
         use proto::model::{Kind, Label};
-        use rocket::futures::{stream, StreamExt};
+        use serde_json::json;
         use tokio::io::AsyncWriteExt;
         use tokio::time::Duration;
 
@@ -194,10 +195,16 @@ mod api {
             let ids = tokio::time::throttle(Duration::from_millis(10),
                                             stream::iter(0..13usize))
                 .then(|_| async {
-                    *server.repository
-                        .stage().await.expect("Staging Bundle")
-                        .create().await.expect("Creating Bundle")
-                        .id()
+                    let bundle = server.repository.stage().await.unwrap();
+
+                    Metadata {
+                        uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
+                        ..Metadata::new()
+                    }.save(bundle.write(Kind::Metadata).await.unwrap()).await.unwrap();
+
+                    let bundle = bundle.create().await.unwrap();
+
+                    *bundle.id()
                 }).collect::<Vec<_>>().await;
 
             let client = server.client().await;
@@ -210,7 +217,17 @@ mod api {
 
             assert_json_eq!(response.into_bytes().await.unwrap(), {
                 "count": 13,
-                "docs": ids[0..10],
+                "docs": ids[0..10].iter().map(|id| json!({
+                    "id": id,
+                    "metadata": {
+                        "archived": (),
+                        "uploaded": "2001-09-09T01:46:40Z",
+                        "pages": (),
+                        "title": (),
+                        "labels": [],
+                        "properties": {},
+                    }
+                })).collect::<Vec<_>>(),
             });
         }
 
@@ -229,11 +246,7 @@ mod api {
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
-                    archived: None,
-                    pages: None,
-                    title: None,
-                    labels: Default::default(),
-                    properties: Default::default(),
+                    ..Metadata::new()
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 *staging.create().await.unwrap().id()
@@ -253,9 +266,15 @@ mod api {
 
             assert_json_eq!(response.into_bytes().await.unwrap(), {
                 "id": doc_id.to_string(),
-                "labels": ["suggestion"],
-                "properties": {},
-                "uploaded": "2001-09-09T01:46:40Z",
+                "metadata": {
+                    "archived": (),
+                    "uploaded": "2001-09-09T01:46:40Z",
+                    "pages": (),
+                    "title": (),
+                    "labels": [],
+                    "properties": {},
+                },
+                "suggestions": ["suggestion"],
             });
         }
 
@@ -274,11 +293,7 @@ mod api {
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
-                    archived: None,
-                    pages: None,
-                    title: None,
-                    labels: Default::default(),
-                    properties: Default::default(),
+                    ..Metadata::new()
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 *staging.create().await.unwrap().id()
@@ -308,11 +323,7 @@ mod api {
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
-                    archived: None,
-                    pages: None,
-                    title: None,
-                    labels: Default::default(),
-                    properties: Default::default(),
+                    ..Metadata::new()
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 *staging.create().await.unwrap().id()
@@ -345,11 +356,11 @@ mod api {
     }
 
     mod archive {
-        use std::str::FromStr;
-
         use chrono::{DateTime, NaiveDateTime, Utc};
-        use proto::model::{DocId, Kind};
-        use rocket::tokio::io::AsyncWriteExt;
+        use futures::{stream, StreamExt};
+        use proto::model::Kind;
+        use serde_json::json;
+        use tokio::io::AsyncWriteExt;
 
         use crate::index::SearchResponse;
         use crate::meta::Metadata;
@@ -371,11 +382,7 @@ mod api {
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
-                    archived: None,
-                    pages: None,
-                    title: None,
-                    labels: Default::default(),
-                    properties: Default::default(),
+                    ..Metadata::new()
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 let inboxed = staging.create().await.unwrap();
@@ -392,6 +399,14 @@ mod api {
 
             assert_json_eq!(response.into_bytes().await.unwrap(), {
                 "id": doc_id.to_string(),
+                "metadata": {
+                    "uploaded": "2001-09-09T01:46:40Z",
+                    "archived": (),
+                    "title": (),
+                    "pages": (),
+                    "labels": [],
+                    "properties": {},
+                }
             });
         }
 
@@ -410,11 +425,7 @@ mod api {
 
                 Metadata {
                     uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
-                    archived: None,
-                    pages: None,
-                    title: None,
-                    labels: Default::default(),
-                    properties: Default::default(),
+                    ..Metadata::new()
                 }.save(staging.write(Kind::Metadata).await.unwrap()).await.unwrap();
 
                 let inboxed = staging.create().await.unwrap();
@@ -436,23 +447,30 @@ mod api {
         async fn test_search() {
             let mut server = Server::new().await;
 
+            // Create bundles in inbox (with a short delay between each to have a unique timestamp)
+            let ids = stream::iter(0..10usize).then(|_| async {
+                let bundle = server.repository.stage().await.unwrap();
+
+                Metadata {
+                    uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
+                    ..Metadata::new()
+                }.save(bundle.write(Kind::Metadata).await.unwrap()).await.unwrap();
+
+                let bundle = bundle.create().await.unwrap();
+                let bundle = bundle.archive().await.unwrap();
+
+                *bundle.id()
+            }).collect::<Vec<_>>().await;
+
             server.index.expect_search()
                 .with(mockall::predicate::eq("testquery"))
-                .returning(|_| Ok(SearchResponse {
-                    count: 387,
-                    docs: vec![
-                        DocId::from_str("6x8SkvtXJNhsTv9Q9nPdmh").unwrap(),
-                        DocId::from_str("75KUW8tPUQNBS4W7ibFeY8").unwrap(),
-                        DocId::from_str("7CWWFLtFeS2VQCrqHQ7fJZ").unwrap(),
-                        DocId::from_str("7KhXzYt7pTgoNMDYrCyg4z").unwrap(),
-                        DocId::from_str("7StZjksyzVM7LVaGR1qgqR").unwrap(),
-                        DocId::from_str("7a5bUxsrAX1RJdvyyphhbr").unwrap(),
-                        DocId::from_str("7hGdEAsiLYfjGnHhYdZiNH").unwrap(),
-                        DocId::from_str("7pTeyNsaWaL3EveR7SRj8i").unwrap(),
-                        DocId::from_str("7wegiasSgbzMD518gFHju9").unwrap(),
-                        DocId::from_str("84qiTnsJrdefBDMrF49kfa").unwrap(),
-                    ],
-                }));
+                .return_once({
+                    let ids = ids.clone();
+                    move |_| Ok(SearchResponse {
+                        count: 387,
+                        docs: ids,
+                    })
+                });
 
             let client = server.client().await;
 
@@ -464,18 +482,17 @@ mod api {
 
             assert_json_eq!(response.into_bytes().await.unwrap(), {
                 "count": 387,
-                "docs": [
-                    "6x8SkvtXJNhsTv9Q9nPdmh",
-                    "75KUW8tPUQNBS4W7ibFeY8",
-                    "7CWWFLtFeS2VQCrqHQ7fJZ",
-                    "7KhXzYt7pTgoNMDYrCyg4z",
-                    "7StZjksyzVM7LVaGR1qgqR",
-                    "7a5bUxsrAX1RJdvyyphhbr",
-                    "7hGdEAsiLYfjGnHhYdZiNH",
-                    "7pTeyNsaWaL3EveR7SRj8i",
-                    "7wegiasSgbzMD518gFHju9",
-                    "84qiTnsJrdefBDMrF49kfa",
-                ],
+                "docs": ids.iter().map(|id| json!({
+                    "id": id,
+                    "metadata": {
+                        "uploaded": "2001-09-09T01:46:40Z",
+                        "archived": (),
+                        "title": (),
+                        "pages": (),
+                        "labels": [],
+                        "properties": {},
+                    }
+                })).collect::<Vec<_>>(),
             });
         }
     }

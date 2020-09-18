@@ -52,11 +52,11 @@ pub(super) async fn bundle(id: &RawStr,
     let metadata = bundle.metadata().await?;
     let plaintext = bundle.plaintext().await?;
 
-    let labels = suggester.guess(&plaintext).await?;
+    let suggestions = suggester.guess(&plaintext).await?;
 
     return Ok(Json(GetResponse {
         doc: (id, metadata).into(),
-        labels,
+        suggestions,
     }));
 }
 
