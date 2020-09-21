@@ -1,5 +1,6 @@
 #![feature(bool_to_option)]
 
+pub use adacta_proto as proto;
 use anyhow::Result;
 use clap::{App, Arg};
 
@@ -19,8 +20,6 @@ pub mod suggester;
 pub mod repository;
 pub mod utils;
 pub mod web;
-
-pub use adacta_proto as proto;
 
 #[tokio::main]
 async fn main() -> Result<()> {

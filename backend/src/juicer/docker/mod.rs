@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use bollard::{Docker, container};
+use bollard::{container, Docker};
+use bollard::container::CreateContainerOptions;
+use bollard::models::HostConfig;
 use bytes::Bytes;
 use log::{error, info};
 use tokio::stream::StreamExt;
@@ -8,8 +10,6 @@ use tokio::stream::StreamExt;
 use crate::config::DockerJuicer as Config;
 use crate::proto::model::Kind;
 use crate::repository::{Bundle, Staging};
-use bollard::container::CreateContainerOptions;
-use bollard::models::HostConfig;
 
 #[cfg(test)]
 mod test;

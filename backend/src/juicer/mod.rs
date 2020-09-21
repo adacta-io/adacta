@@ -1,6 +1,5 @@
 use anyhow::Result;
 use async_trait::async_trait;
-
 #[cfg(test)]
 use mockall::automock;
 

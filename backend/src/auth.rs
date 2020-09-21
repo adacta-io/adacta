@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-use serde::{Serialize, Deserialize};
 
 use anyhow::Result;
 use jsonwebtoken::{DecodingKey, EncodingKey};
+use serde::{Deserialize, Serialize};
 
 use crate::config::Auth;
 
