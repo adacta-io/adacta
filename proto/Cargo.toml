@@ -1,5 +1,5 @@
 [package]
-name = "proto"
+name = "adacta-proto"
 version = "0.1.0"
 authors = ["Dustin Frisch <fooker@lab.sh>"]
 edition = "2018"

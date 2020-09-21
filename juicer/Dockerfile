@@ -2,7 +2,8 @@ FROM jbarlow83/ocrmypdf
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils \
-    tesseract-ocr-all
+    tesseract-ocr-all \
+    jq
 
 COPY juicer.sh enhance.sh /
 

@@ -2,9 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use proto::model::Label;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+
+use crate::proto::model::Label;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Metadata {
@@ -51,9 +52,9 @@ impl Default for Metadata {
     fn default() -> Self { Self::new() }
 }
 
-impl Into<proto::model::Metadata> for Metadata {
-    fn into(self) -> proto::model::Metadata {
-        return proto::model::Metadata {
+impl Into<crate::proto::model::Metadata> for Metadata {
+    fn into(self) -> crate::proto::model::Metadata {
+        return crate::proto::model::Metadata {
             uploaded: self.uploaded,
             archived: self.archived,
             title: self.title,

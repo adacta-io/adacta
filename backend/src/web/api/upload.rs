@@ -1,13 +1,13 @@
 use anyhow::Context;
 use log::{info, trace};
-use proto::api::upload::UploadResponse;
-use proto::model::{Kind, DocInfo};
 use rocket::{Data, post, State};
 use rocket::data::ToByteUnit;
 use rocket_contrib::json::Json;
 
 use crate::juicer::Juicer;
 use crate::meta::Metadata;
+use crate::proto::api::upload::UploadResponse;
+use crate::proto::model::{DocInfo, Kind};
 use crate::repository::Repository;
 
 use super::{ApiError, Token};

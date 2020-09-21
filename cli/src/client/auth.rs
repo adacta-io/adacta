@@ -2,7 +2,7 @@ use anyhow::Result;
 use reqwest::header::HeaderValue;
 use reqwest::Url;
 
-use proto::api::auth::AuthRequest;
+use crate::proto::api::auth::AuthRequest;
 
 #[derive(Debug)]
 pub enum Auth {

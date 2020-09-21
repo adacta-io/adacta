@@ -1,13 +1,18 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use bollard::{container, Docker};
+use bollard::{Docker, container};
 use bytes::Bytes;
 use log::{error, info};
-use proto::model::Kind;
 use tokio::stream::StreamExt;
 
 use crate::config::DockerJuicer as Config;
+use crate::proto::model::Kind;
 use crate::repository::{Bundle, Staging};
+use bollard::container::CreateContainerOptions;
+use bollard::models::HostConfig;
+
+#[cfg(test)]
+mod test;
 
 pub struct Juicer {
     docker: Docker,
@@ -35,14 +40,14 @@ impl super::Juicer for Juicer {
         let name = format!("juicer-{}", bundle.id());
 
         info!("Creating container {}", name);
-        self.docker.create_container(Some(container::CreateContainerOptions { name: name.clone() }),
+        self.docker.create_container(Some(CreateContainerOptions { name: name.clone() }),
                                      container::Config {
                                          image: Some(self.image.clone()),
                                          env: Some(vec![format!("DID={}", bundle.id())]),
                                          network_disabled: Some(true),
-                                         host_config: Some(container::HostConfig {
+                                         host_config: Some(HostConfig {
                                              binds: Some(vec![format!("{}:/juicer", bundle.path().display())]),
-                                             ..container::HostConfig::default()
+                                             ..HostConfig::default()
                                          }),
                                          ..container::Config::default()
                                      },
@@ -72,7 +77,7 @@ impl super::Juicer for Juicer {
         info!("Waiting for container to finish");
         let result = self.docker.wait_container(&name,
                                                 Some(container::WaitContainerOptions {
-                                                    condition: "not-running",
+                                                    condition: "next-exit",
                                                 }))
             .next().await
             .unwrap()?; // TODO: ist this the way to use this?
@@ -83,7 +88,7 @@ impl super::Juicer for Juicer {
             error!("Container failed: {:?}", result);
 
             Err(anyhow!("Error while juicing: {}",
-                        result.error.map_or_else(|| String::from("unknown"), |err| err.message)))
+                        result.error.and_then(|err| err.message).unwrap_or_else(|| String::from("unknown"))))
         } else {
             Ok(())
         }

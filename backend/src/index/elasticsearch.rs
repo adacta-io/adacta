@@ -6,13 +6,13 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use elasticsearch::{Elasticsearch, IndexParts, SearchParts};
 use elasticsearch::http::transport::Transport;
-use proto::model::{DocId, Label};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_json::value::{RawValue, Value};
 
 use crate::config::ElasticsearchIndex as Config;
 use crate::index::SearchResponse;
+use crate::proto::model::{DocId, Label};
 use crate::repository::{Archived, Bundle};
 
 const DOCUMENT_TYPE: &str = "document";

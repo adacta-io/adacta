@@ -4,7 +4,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::automock;
-use proto::model::Label;
+
+use crate::proto::model::Label;
 
 pub mod bayesian;
 pub mod dumb;

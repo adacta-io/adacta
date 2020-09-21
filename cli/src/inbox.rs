@@ -3,10 +3,10 @@ use std::io::Write;
 
 use anyhow::Result;
 use colored::Colorize;
-use proto::api::inbox::{ArchiveRequest, GetResponse, ListResponse};
 
 use crate::client::Client;
 use crate::output::{Output, SimpleOutput};
+use crate::proto::api::inbox::{ArchiveRequest, GetResponse, ListResponse};
 
 pub async fn exec(matches: &clap::ArgMatches<'_>, client: &mut Client) -> Result<Box<dyn Output>> {
     return match matches.subcommand() {

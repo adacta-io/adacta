@@ -178,12 +178,12 @@ mod api {
 
         use chrono::{DateTime, NaiveDateTime, Utc};
         use futures::{stream, StreamExt};
-        use proto::model::{Kind, Label};
         use serde_json::json;
         use tokio::io::AsyncWriteExt;
         use tokio::time::Duration;
 
         use crate::meta::Metadata;
+        use crate::proto::model::{Kind, Label};
 
         use super::*;
 
@@ -358,12 +358,12 @@ mod api {
     mod archive {
         use chrono::{DateTime, NaiveDateTime, Utc};
         use futures::{stream, StreamExt};
-        use proto::model::Kind;
         use serde_json::json;
         use tokio::io::AsyncWriteExt;
 
         use crate::index::SearchResponse;
         use crate::meta::Metadata;
+        use crate::proto::model::Kind;
 
         use super::*;
 

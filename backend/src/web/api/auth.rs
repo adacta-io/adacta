@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use log::info;
-use proto::api::auth::AuthRequest;
 use rocket::{Data, post, Request, Response, State};
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{Header, Status};
@@ -9,6 +8,7 @@ use rocket_contrib::json::Json;
 
 use crate::auth::Authenticator;
 pub use crate::auth::Token;
+use crate::proto::api::auth::AuthRequest;
 use crate::utils::StrExt;
 
 pub struct Authorization {}

@@ -3,8 +3,6 @@ use std::str::FromStr;
 use anyhow::Result;
 use chrono::Utc;
 use futures::{StreamExt, TryStreamExt};
-use proto::api::inbox::{ArchiveRequest, GetResponse, ListResponse};
-use proto::model::{DocId, DocInfo, Kind};
 use rocket::{delete, get, post, State};
 use rocket::http::{ContentType, RawStr};
 use rocket::response::{Content, Stream};
@@ -12,6 +10,8 @@ use rocket_contrib::json::Json;
 use tokio::io::AsyncRead;
 
 use crate::index::Index;
+use crate::proto::api::inbox::{ArchiveRequest, GetResponse, ListResponse};
+use crate::proto::model::{DocId, DocInfo, Kind};
 use crate::repository::Repository;
 use crate::suggester::Suggester;
 use crate::web::api::InternalError;

@@ -1,8 +1,6 @@
 use std::str::FromStr;
 
 use anyhow::anyhow;
-use proto::api::archive::{BundleResponse, SearchResponse};
-use proto::model::{DocId, Kind};
 use rocket::{get, http::ContentType, State};
 use rocket::http::RawStr;
 use rocket::response::{Content, Stream};
@@ -10,6 +8,8 @@ use rocket_contrib::json::Json;
 use tokio::io::AsyncRead;
 
 use crate::index::Index;
+use crate::proto::api::archive::{BundleResponse, SearchResponse};
+use crate::proto::model::{DocId, Kind};
 use crate::repository::Repository;
 
 use super::{ApiError, InternalError, Token};

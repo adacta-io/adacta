@@ -12,7 +12,7 @@ categories = ["application"]
 edition = "2018"
 
 [dependencies]
-proto = { path = "../proto" }
+adacta-proto = { path = "../proto" }
 tokio = { version = "0.2", features = [ "full" ] }
 tokio-util = { version = "0.3.1", features = [ "codec" ] }
 futures = "0.3.5"

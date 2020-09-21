@@ -1,12 +1,13 @@
 use anyhow::Result;
-use proto::api::{archive, inbox, upload};
+use futures::{SinkExt, StreamExt, TryStreamExt};
 use reqwest::{Body, Method, RequestBuilder, Url};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_util::codec::{BytesCodec, FramedRead, FramedWrite};
 
 pub use auth::Auth;
 use auth::Session;
-use futures::{StreamExt, TryStreamExt, SinkExt};
+
+use crate::proto::api::{archive, inbox, upload};
 
 pub mod auth;
 

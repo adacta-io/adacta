@@ -5,11 +5,11 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use proto::model::Label;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
 use crate::config::BayesicSuggester as Config;
+use crate::proto::model::Label;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Deserialize, Serialize)]
 struct Counter {

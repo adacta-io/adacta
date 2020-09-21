@@ -2,8 +2,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 #[cfg(test)]
 use mockall::automock;
-use proto::model::DocId;
 
+use crate::proto::model::DocId;
 use crate::repository::{Archived, Bundle};
 
 pub mod elasticsearch;

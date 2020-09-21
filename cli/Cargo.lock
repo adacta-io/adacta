@@ -4,11 +4,11 @@
 name = "adacta-cli"
 version = "0.1.0"
 dependencies = [
+ "adacta-proto",
  "anyhow",
  "clap",
  "colored",
  "futures",
- "proto",
  "reqwest",
  "serde",
  "serde_json",
@@ -16,6 +16,17 @@ dependencies = [
  "tokio",
  "tokio-util",
  "xdg",
+]
+
+[[package]]
+name = "adacta-proto"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base58",
+ "chrono",
+ "serde",
+ "uuid",
 ]
 
 [[package]]
@@ -754,17 +765,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "175c513d55719db99da20232b06cda8bab6b83ec2d04e3283edf0213c37c1a29"
 dependencies = [
  "unicode-xid",
-]
-
-[[package]]
-name = "proto"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base58",
- "chrono",
- "serde",
- "uuid",
 ]
 
 [[package]]

@@ -1,12 +1,14 @@
 #![feature(str_split_once)]
 
+use std::io::stdout;
+
+pub use adacta_proto as proto;
 use anyhow::Result;
 use clap::{AppSettings, Arg, SubCommand};
+use colored::Colorize;
 
 use crate::config::Config;
-use colored::Colorize;
 use crate::output::Output;
-use std::io::stdout;
 
 mod config;
 mod output;

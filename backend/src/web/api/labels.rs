@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-use proto::model::Label;
 use rocket::{get, State};
 use rocket_contrib::json::Json;
 
+use crate::proto::model::Label;
 use crate::suggester::Suggester;
 
 use super::{ApiError, Token};

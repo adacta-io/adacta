@@ -1,9 +1,11 @@
+use std::io::Write;
+
 use anyhow::Result;
+use colored::Colorize;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
-use std::io::Write;
-use proto::model::DocInfo;
-use colored::Colorize;
+
+use crate::proto::model::DocInfo;
 
 pub trait Output {
     fn to_json(&self) -> Result<JsonValue>;

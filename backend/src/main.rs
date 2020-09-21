@@ -1,5 +1,3 @@
-#![feature(proc_macro_hygiene)]
-#![feature(decl_macro)]
 #![feature(bool_to_option)]
 
 use anyhow::Result;
@@ -22,6 +20,8 @@ pub mod repository;
 pub mod utils;
 pub mod web;
 
+pub use adacta_proto as proto;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = App::new("adacta")
@@ -41,7 +41,6 @@ async fn main() -> Result<()> {
             .takes_value(true)
             .default_value("adacta.yaml"))
         .get_matches();
-
 
 
     let config = Config::load(matches.value_of("config").expect("No config arg")).await?;
