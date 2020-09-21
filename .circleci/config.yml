@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   shellcheck: circleci/shellcheck@2.0.0
   docker: circleci/docker@1.4.0
+  circleci-cli: circleci/circleci-cli@0.1.8
 
 commands:
   rust-build:
@@ -76,6 +77,17 @@ jobs:
           root: ~/project
           paths: ./*
 
+  circleci-check:
+    docker:
+      - image: cimg/base:stable
+    working_directory: ~/project
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - circleci-cli/install
+      - run: |
+          circleci config validate
+
   frontend-build:
     docker:
       - image: circleci/node:12
@@ -137,7 +149,6 @@ jobs:
       - run: |
           sudo npm install -g dockerfilelint
           dockerfilelint ./Dockerfile
-
 
   proto-build:
     docker:
@@ -242,6 +253,10 @@ workflows:
     jobs:
       - checkout
 
+      - circleci-check:
+          requires:
+            - checkout
+
       - frontend-build:
           requires:
             - checkout
@@ -251,11 +266,9 @@ workflows:
             - checkout
       - juicer-check-shell:
           requires:
-            - checkout
             - juicer-build
       - juicer-check-docker:
           requires:
-            - checkout
             - juicer-build
 
       - proto-build:
