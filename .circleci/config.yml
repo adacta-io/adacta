@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   shellcheck: circleci/shellcheck@2.0.0
+  docker: circleci/docker@1.4.0
 
 commands:
   rust-build:
@@ -84,14 +85,14 @@ jobs:
           at: ~/project
       - restore_cache:
           name: "Restore Cache - Node Modules"
-          key: adacta-frontend-npm-{{ .Branch }}-{{ checksum "./package-lock.json" }}
+          key: adacta-npm-{{ .Branch }}-{{ checksum "./package-lock.json" }}
       - run:
           name: "Install Node Modules"
           command: |
             npm install
       - save_cache:
           name: "Save Cache - Node Modules"
-          key: adacta-frontend-npm-{{ .Branch }}-{{ checksum "./package-lock.json" }}
+          key: adacta-npm-{{ .Branch }}-{{ checksum "./package-lock.json" }}
           paths:
             - ./frontend/node_modules
       - run:
@@ -103,14 +104,40 @@ jobs:
           root: ~/project
           paths: ./frontend/dist/adacta/*
 
-  juicer-check:
+  juicer-build:
     docker:
       - image: cimg/base:stable
     working_directory: ~/project/juicer
     steps:
+      - attach_workspace:
+          at: ~/project
+      - setup_remote_docker
+      - run: docker build ./
+
+  juicer-check-shell:
+    docker:
+      - image: cimg/base:stable
+    working_directory: ~/project/juicer
+    steps:
+      - attach_workspace:
+          at: ~/project
       - shellcheck/install
-      - shellcheck/check:
-          dir: ./
+      - shellcheck/check
+
+  juicer-check-docker:
+    docker:
+      - image: cimg/node:current
+    working_directory: ~/project/juicer
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run: |
+          sudo npm install -g dockerlint
+          dockerlint -p ./Dockerfile
+      - run: |
+          sudo npm install -g dockerfilelint
+          dockerfilelint ./Dockerfile
+
 
   proto-build:
     docker:
@@ -172,6 +199,7 @@ jobs:
       - image: rustlang/rust:nightly
     working_directory: ~/project/backend
     steps:
+      - setup_remote_docker
       - rust-test
 
   cli-build:
@@ -218,9 +246,17 @@ workflows:
           requires:
             - checkout
 
-      - juicer-check:
+      - juicer-build:
           requires:
             - checkout
+      - juicer-check-shell:
+          requires:
+            - checkout
+            - juicer-build
+      - juicer-check-docker:
+          requires:
+            - checkout
+            - juicer-build
 
       - proto-build:
           requires:
@@ -248,6 +284,7 @@ workflows:
             - backend-build
       - backend-test:
           requires:
+            - juicer-build
             - backend-build
 
       - cli-build:
