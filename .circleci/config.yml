@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  shellcheck: circleci/shellcheck@2.0.0
+
 commands:
   rust-build:
     steps:
@@ -99,7 +102,16 @@ jobs:
       - persist_to_workspace:
           root: ~/project
           paths: ./frontend/dist/adacta/*
-  
+
+  juicer-check:
+    docker:
+      - image: cimg/base:stable
+    working_directory: ~/project/juicer
+    steps:
+      - shellcheck/install
+      - shellcheck/check:
+          dir: ./
+
   proto-build:
     docker:
       - image: rustlang/rust:nightly
@@ -203,6 +215,10 @@ workflows:
       - checkout
 
       - frontend-build:
+          requires:
+            - checkout
+
+      - juicer-check:
           requires:
             - checkout
 
