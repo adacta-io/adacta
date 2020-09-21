@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use rocket::http::{ContentType, Status};
+use spectral::prelude::*;
 
 struct Server {
     pub authenticator: crate::auth::Authenticator,
@@ -61,18 +62,18 @@ mod frontend {
         let client = server.client().await;
 
         let response_root = client.get("/").dispatch().await;
-        assert_eq!(response_root.status(), Status::Ok);
+        assert_that!(response_root.status()).is_equal_to(Status::Ok);
 
         let response_root = response_root.into_string().await;
-        assert_eq!(response_root.is_some(), true);
+        assert_that!(response_root).is_some();
 
         let response_index = client.get("/index.html").dispatch().await;
-        assert_eq!(response_index.status(), Status::Ok);
+        assert_that!(response_index.status()).is_equal_to(Status::Ok);
 
         let response_index = response_index.into_string().await;
-        assert_eq!(response_index.is_some(), true);
+        assert_that!(response_index).is_some();
 
-        assert_eq!(response_index, response_root);
+        assert_that!(response_index).is_equal_to(response_root);
     }
 }
 
@@ -111,8 +112,8 @@ mod api {
                 }))
                 .dispatch().await;
 
-            assert_eq!(response.status(), Status::Accepted);
-            assert!(response.headers().get("Authorization").next().is_some());
+            assert_that!(response.status()).is_equal_to(Status::Accepted);
+            assert_that!(response.headers().get_one("Authorization")).is_some();
         }
 
         #[tokio::test]
@@ -127,8 +128,8 @@ mod api {
                 }))
                 .dispatch().await;
 
-            assert_eq!(response.status(), Status::BadRequest);
-            assert!(response.headers().get("Authorization").next().is_none());
+            assert_that!(response.status()).is_equal_to(Status::BadRequest);
+            assert_that!(response.headers().get_one("Authorization")).is_none();
         }
     }
 
@@ -168,7 +169,7 @@ mod api {
                 .dispatch().await;
 
 
-            assert_eq!(response.status(), Status::Ok);
+            assert_that!(response.status()).is_equal_to(Status::Ok);
         }
     }
 
@@ -213,7 +214,7 @@ mod api {
                 .header(api_key())
                 .dispatch().await;
 
-            assert_eq!(response.status(), Status::Ok);
+            assert_that!(response.status()).is_equal_to(Status::Ok);
 
             assert_json_eq!(response.into_bytes().await.unwrap(), {
                 "count": 13,
@@ -262,7 +263,7 @@ mod api {
                 .header(api_key())
                 .dispatch().await;
 
-            assert_eq!(response.status(), Status::Ok);
+            assert_that!(response.status()).is_equal_to(Status::Ok);
 
             assert_json_eq!(response.into_bytes().await.unwrap(), {
                 "id": doc_id.to_string(),
@@ -305,7 +306,7 @@ mod api {
                 .header(api_key())
                 .dispatch().await;
 
-            assert_eq!(response.status(), Status::Ok);
+            assert_that!(response.status()).is_equal_to(Status::Ok);
         }
 
         #[tokio::test]
@@ -351,7 +352,7 @@ mod api {
                 }))
                 .dispatch().await;
 
-            assert_eq!(response.status(), Status::Ok);
+            assert_that!(response.status()).is_equal_to(Status::Ok);
         }
     }
 
@@ -395,7 +396,7 @@ mod api {
                 .header(api_key())
                 .dispatch().await;
 
-            assert_eq!(response.status(), Status::Ok);
+            assert_that!(response.status()).is_equal_to(Status::Ok);
 
             assert_json_eq!(response.into_bytes().await.unwrap(), {
                 "id": doc_id.to_string(),
@@ -438,9 +439,9 @@ mod api {
                 .header(api_key())
                 .dispatch().await;
 
-            assert_eq!(response.status(), Status::Ok);
+            assert_that!(response.status()).is_equal_to(Status::Ok);
 
-            assert_eq!(response.into_bytes().await.unwrap(), b"my document plaintext");
+            assert_that!(response.into_bytes().await).is_some().is_equal_to(b"my document plaintext".to_vec());
         }
 
         #[tokio::test]
@@ -478,7 +479,7 @@ mod api {
                 .header(api_key())
                 .dispatch().await;
 
-            assert_eq!(response.status(), Status::Ok);
+            assert_that!(response.status()).is_equal_to(Status::Ok);
 
             assert_json_eq!(response.into_bytes().await.unwrap(), {
                 "count": 387,
