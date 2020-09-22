@@ -6,16 +6,19 @@ use crate::meta::Metadata;
 use crate::repository::Repository;
 
 use super::*;
+use log::LevelFilter;
 
 #[tokio::test]
 async fn test_extract_pages() {
+    let _ = env_logger::builder().filter_module("adacta", LevelFilter::Trace).is_test(true).try_init();
+
     let repository = Repository::with_path(tempfile::tempdir().unwrap()).await.unwrap();
     let juicer = juicer().await.unwrap();
 
     let bundle = upload(&repository, Metadata {
         uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
         ..Metadata::new()
-    }, "pages.pdf").await.unwrap();
+    }, "extract_pages.pdf").await.unwrap();
 
     juicer.extract(&bundle).await.unwrap();
 
@@ -23,14 +26,16 @@ async fn test_extract_pages() {
 }
 
 #[tokio::test]
-async fn test_extract_title_from_pdf() {
+async fn test_extract_with_title() {
+    let _ = env_logger::builder().filter_module("adacta", LevelFilter::Trace).is_test(true).try_init();
+
     let repository = Repository::with_path(tempfile::tempdir().unwrap()).await.unwrap();
     let juicer = juicer().await.unwrap();
 
     let bundle = upload(&repository, Metadata {
         uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
         ..Metadata::new()
-    }, "with_title.pdf").await.unwrap();
+    }, "extract_with_title.pdf").await.unwrap();
 
     juicer.extract(&bundle).await.unwrap();
 
@@ -38,7 +43,9 @@ async fn test_extract_title_from_pdf() {
 }
 
 #[tokio::test]
-async fn test_extract_title_from_manifest() {
+async fn test_extract_without_title() {
+    let _ = env_logger::builder().filter_module("adacta", LevelFilter::Trace).is_test(true).try_init();
+
     let repository = Repository::with_path(tempfile::tempdir().unwrap()).await.unwrap();
     let juicer = juicer().await.unwrap();
 
@@ -46,7 +53,7 @@ async fn test_extract_title_from_manifest() {
         uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
         title: Some(String::from("Some existing title")),
         ..Metadata::new()
-    }, "without_title.pdf").await.unwrap();
+    }, "extract_without_title.pdf").await.unwrap();
 
     juicer.extract(&bundle).await.unwrap();
 
@@ -54,7 +61,9 @@ async fn test_extract_title_from_manifest() {
 }
 
 #[tokio::test]
-async fn test_extract_title_conflicting() {
+async fn test_extract_with_title_conflicting() {
+    let _ = env_logger::builder().filter_module("adacta", LevelFilter::Trace).is_test(true).try_init();
+
     let repository = Repository::with_path(tempfile::tempdir().unwrap()).await.unwrap();
     let juicer = juicer().await.unwrap();
 
@@ -62,7 +71,7 @@ async fn test_extract_title_conflicting() {
         uploaded: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(1_000_000_000, 0), Utc),
         title: Some(String::from("Some existing title")),
         ..Metadata::new()
-    }, "with_title.pdf").await.unwrap();
+    }, "extract_with_title.pdf").await.unwrap();
 
     juicer.extract(&bundle).await.unwrap();
 

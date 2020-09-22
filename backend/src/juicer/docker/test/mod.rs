@@ -1,4 +1,3 @@
-use bollard::image::BuildImageOptions;
 use rust_embed::RustEmbed;
 use tokio::io::AsyncWriteExt;
 
@@ -6,6 +5,7 @@ use crate::meta::Metadata;
 use crate::repository::Repository;
 
 use super::*;
+use shiplift::BuildOptions;
 
 mod extract;
 
@@ -14,35 +14,28 @@ mod extract;
 pub struct Resources;
 
 pub async fn juicer() -> Result<Juicer> {
-    let mut body = Vec::<u8>::new();
+    let docker = Docker::new();
+    let images = docker.images();
 
-    {
-        let mut tar = tar::Builder::new(&mut body);
-        tar.append_dir_all("./", "../juicer")?;
-        tar.finish()?;
-    }
-
-    let docker = Docker::connect_with_local_defaults()?;
-    let mut image = docker.build_image(BuildImageOptions {
-        dockerfile: "Dockerfile",
-        ..Default::default()
-    }, None, Some(body.into()));
+    let build = BuildOptions::builder("../juicer")
+        .network_mode("host")
+        .rm(true)
+        .forcerm(true)
+        .build();
+    let mut image = images.build(&build);
 
     let id = loop {
-        match image.next().await {
-            Some(Ok(info)) => {
-                if let Some(aux) = info.aux {
-                    if let Some(id) = aux.id {
-                        break id;
-                    }
-                }
-            }
-            Some(Err(err)) => {
-                return Err(err.into());
-            }
-            None => {
-                return Err(anyhow!("Finished without ID"));
-            }
+        let result = image.next().await
+            .with_context(|| "Error building docker image")?;
+        let result = result
+            .with_context(|| "Finished without ID")?;
+
+        if let Some(stream) = result.get("stream").and_then(|o| o.as_str()) {
+            print!("{}", stream);
+        }
+
+        if let Some(id) = result.get("aux").and_then(|o| o.get("ID")).and_then(|o| o.as_str()) {
+            break id.to_string();
         }
     };
 

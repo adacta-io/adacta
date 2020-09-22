@@ -1,11 +1,9 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Context, Result};
 use async_trait::async_trait;
-use bollard::{container, Docker};
-use bollard::container::CreateContainerOptions;
-use bollard::models::HostConfig;
-use bytes::Bytes;
-use log::{error, info};
-use tokio::stream::StreamExt;
+use futures::StreamExt;
+use log::{debug, error, trace};
+use shiplift::{ContainerOptions, Docker, LogsOptions};
+use tokio::io::AsyncWriteExt;
 
 use crate::config::DockerJuicer as Config;
 use crate::proto::model::Kind;
@@ -24,7 +22,7 @@ impl Juicer {
     const DOCKER_IMAGE: &'static str = "adacta10/juicer:develop";
 
     pub async fn from_config(config: Config) -> Result<Self> {
-        let docker = Docker::connect_with_local_defaults()?;
+        let docker = Docker::new();
         // docker.ping().await?; // TODO: Implement?
 
         let image = config.image
@@ -37,60 +35,57 @@ impl Juicer {
 #[async_trait]
 impl super::Juicer for Juicer {
     async fn extract<'r>(&self, bundle: &Bundle<'r, Staging>) -> Result<()> {
-        let name = format!("juicer-{}", bundle.id());
+        // Open the log file
+        let mut logfile = bundle.write(Kind::other("juicer.log")).await
+            .with_context(|| "Failed to open juicer.log")?;
 
-        info!("Creating container {}", name);
-        self.docker.create_container(Some(CreateContainerOptions { name: name.clone() }),
-                                     container::Config {
-                                         image: Some(self.image.clone()),
-                                         env: Some(vec![format!("DID={}", bundle.id())]),
-                                         network_disabled: Some(true),
-                                         host_config: Some(HostConfig {
-                                             binds: Some(vec![format!("{}:/juicer", bundle.path().display())]),
-                                             ..HostConfig::default()
-                                         }),
-                                         ..container::Config::default()
-                                     },
-        ).await?;
+        let containers = self.docker.containers();
 
-        info!("Starting container {}", name);
-        self.docker.start_container(&name, None::<container::StartContainerOptions<String>>).await?;
+        debug!("Creating container");
+        let create = ContainerOptions::builder(&self.image)
+            .name(&format!("juicer-{}", bundle.id()))
+            .network_mode("none")
+            .volumes(vec![
+                &format!("{}:/juicer", bundle.path().display())
+            ])
+            .build();
+        let container = containers.create(&create).await
+            .with_context(|| format!("Error creating container (image={})", self.image))?;
+        let container = containers.get(&container.id);
 
-        let mut log_writer = bundle.write(Kind::other("juicer.log")).await?;
-        let mut log_reader = tokio::io::stream_reader(self.docker.logs(&name,
-                                                                       Some(container::LogsOptions {
-                                                                           stdout: true,
-                                                                           stderr: true,
-                                                                           tail: String::from("all"),
-                                                                           follow: true,
-                                                                           ..container::LogsOptions::default()
-                                                                       }))
-            .map(|v| {
-                info!(">> {:?}", v);
-                match v {
-                    Ok(out) => Ok(Bytes::from(format!("{}\n", out))),
-                    Err(err) => Err(std::io::Error::new(std::io::ErrorKind::Other, err)),
-                }
-            }));
-        let logs = tokio::io::copy(&mut log_reader, &mut log_writer);
+        debug!("Starting container (id={})", container.id());
+        container.start().await
+            .with_context(|| format!("Error starting container (id={})", container.id()))?;
 
-        info!("Waiting for container to finish");
-        let result = self.docker.wait_container(&name,
-                                                Some(container::WaitContainerOptions {
-                                                    condition: "next-exit",
-                                                }))
-            .next().await
-            .unwrap()?; // TODO: ist this the way to use this?
+        // Read the output from container and write to log file
+        let mut output = container.logs(&LogsOptions::builder()
+            .follow(true)
+            .stdout(true)
+            .stderr(true)
+            .build());
+        while let Some(chunk) = output.next().await {
+            let chunk = chunk.with_context(|| format!("Error running container (id={})", container.id()))?;
 
-        logs.await?;
+            trace!("{}: {}", container.id(), String::from_utf8_lossy(&chunk));
 
-        if result.status_code != 0 {
-            error!("Container failed: {:?}", result);
-
-            Err(anyhow!("Error while juicing: {}",
-                        result.error.and_then(|err| err.message).unwrap_or_else(|| String::from("unknown"))))
-        } else {
-            Ok(())
+            logfile.write_all(&chunk).await
+                .with_context(|| "Failed to write log")?;
         }
+
+        debug!("Waiting for container to finish (id={})", container.id());
+        let result = container.wait().await
+            .with_context(|| format!("Error waiting for container (id={})", container.id()))?;
+
+        debug!("Deleting container (id={})", container.id());
+        container.delete().await
+            .with_context(|| format!("Error deleting container (id={})", container.id()))?;
+
+        // Fail with error depending on status-code
+        if result.status_code != 0 {
+            error!("Container failed (id={}): {}", container.id(), result.status_code);
+            anyhow::bail!("Juicing failed (id={}): {}", container.id(), result.status_code);
+        }
+
+        return Ok(());
     }
 }

@@ -27,7 +27,7 @@ serde_json = { version = "1.0", features = ["raw_value"] }
 serde_yaml = "0.8"
 async-trait = "0.1"
 elasticsearch = "7.6.1-alpha.1"
-bollard = { git = "https://github.com/fussybeaver/bollard.git", branch = "master" }
+shiplift = { git = "https://github.com/softprops/shiplift.git", branch = "master" }
 tokio = { version = "0.2", features = [ "full" ] }
 futures = "0.3.5"
 bytes = "0.5"
@@ -44,3 +44,4 @@ mockall = "0.8.0"
 rand = "0.7.3"
 spectral = "0.6.0"
 tar = "0.4.30"
+env_logger = "0.7.1"
