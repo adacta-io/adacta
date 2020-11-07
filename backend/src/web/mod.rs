@@ -19,12 +19,11 @@ pub fn server(config: Config,
               index: Box<dyn Index + Send + Sync>,
               juicer: Box<dyn Juicer + Send + Sync>,
               suggester: Box<dyn Suggester + Send + Sync>) -> Result<rocket::Rocket> {
-    let config = rocket::config::ConfigBuilder::new(rocket::config::Environment::active()?)
-        .address(config.address)
-        .port(config.port)
-        .finalize()?;
+    let figment = rocket::figment::Figment::from(rocket::Config::default())
+        .merge(("address", config.address))
+        .merge(("port", config.port));
 
-    Ok(rocket::custom(config)
+    Ok(rocket::custom(figment)
         .attach(api::Authorization {})
         .manage(auth)
         .manage(repository)

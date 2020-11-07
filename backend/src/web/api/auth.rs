@@ -22,7 +22,7 @@ impl Fairing for Authorization {
         }
     }
 
-    async fn on_request(&self, request: &mut Request<'_>, _data: &Data) {
+    async fn on_request(&self, request: &mut Request<'_>, _data: &mut Data) {
         request.local_cache_async::<Option<Token>, _>(async {
             let auth = request
                 .guard::<State<'_, Authenticator>>()
