@@ -14,7 +14,9 @@ in pkgs.mkShell {
     rustChannel.cargo
     pkg-config
     openssl
+    nodejs
   ];
 
   RUST_BACKTRACE = 1;
+  RUST_SRC = "${rustChannel.rust-src}/lib/rustlib/src/rust";
 }
