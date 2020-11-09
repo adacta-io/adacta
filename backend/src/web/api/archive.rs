@@ -23,7 +23,7 @@ pub(super) async fn bundle(id: &RawStr,
     let bundle = repository.archive().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
-    let metadata = bundle.metadata().await?;
+    let metadata = bundle.read_metadata().await?;
 
     Ok(Json(BundleResponse {
         doc: (id, metadata).into(),
@@ -38,23 +38,22 @@ pub(super) async fn fragment(id: &RawStr,
     let id = DocId::from_str(id.as_str())?;
     let kind = Kind::from(fragment.as_str());
 
+    let content_type = match kind {
+        Kind::Document => ContentType::PDF,
+        Kind::Preview => ContentType::PNG,
+        Kind::Plaintext => ContentType::Plain,
+        Kind::Metadata => ContentType::JSON,
+        Kind::Other { .. } => ContentType::Any,
+    };
+
     let bundle = repository.archive().get(id).await
         .ok_or_else(|| ApiError::not_found(format!("Bundle not found: {}", id)))?;
 
-    return bundle.with_fragment(kind, |file, kind| async move {
-        let content_type = match kind {
-            Kind::Document => ContentType::PDF,
-            Kind::Preview => ContentType::PNG,
-            Kind::Plaintext => ContentType::Plain,
-            Kind::Metadata => ContentType::JSON,
-            Kind::ProcessLog => ContentType::Plain,
-            Kind::Other { .. } => ContentType::Any,
-        };
-
-        return Ok(Content(content_type, file.into()));
-    }).await
+    let file = bundle.read(kind).await
         .map_err(InternalError)?
-        .ok_or_else(|| ApiError::not_found(format!("Fragment not found: {}/{}", id, fragment)));
+        .ok_or_else(|| ApiError::not_found(format!("Fragment not found: {}/{}", id, fragment)))?;
+
+    return Ok(Content(content_type, file.into()));
 }
 
 #[get("/archive?<query>")]
@@ -70,7 +69,7 @@ pub(super) async fn search(query: &RawStr,
         let bundle = repository.archive().get(id).await
             .ok_or_else(|| anyhow!("Bundle missing: {}", id))?;
 
-        let metadata = bundle.metadata().await?;
+        let metadata = bundle.read_metadata().await?;
 
         docs.push((*bundle.id(), metadata).into());
     }

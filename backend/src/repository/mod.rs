@@ -1,6 +1,6 @@
+use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::ffi::OsString;
-use std::future::Future;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -8,8 +8,8 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use futures::TryStreamExt;
 use log::info;
-use tokio::fs::{File, OpenOptions};
-use tokio::io::{AsyncReadExt, AsyncWrite};
+use tokio::fs::OpenOptions;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite};
 
 use crate::config::Repository as Config;
 use crate::meta::Metadata;
@@ -122,7 +122,6 @@ impl Filename for Kind {
             Self::Preview => OsString::from("preview.png"),
             Self::Plaintext => OsString::from("document.txt"),
             Self::Metadata => OsString::from("metadata.json"),
-            Self::ProcessLog => OsString::from("process.log"),
             Self::Other { name } => OsString::from(name),
         };
     }
@@ -137,10 +136,10 @@ impl<State: BundleState> Bundle<'_, State> {
 
     pub fn path(&self) -> PathBuf { return State::path(self.repository).join(self.id.filename()); }
 
-    pub async fn with_fragment<F, R, Fut>(&self, kind: Kind, f: F) -> Result<Option<R>>
-        where F: Fn(File, Kind) -> Fut,
-              Fut: Future<Output=Result<R>> {
-        let path = self.path().join(kind.filename());
+    pub fn path_of(&self, kind: impl Borrow<Kind>) -> PathBuf { return self.path().join(kind.borrow().filename()); }
+
+    pub async fn read(&self, kind: impl Borrow<Kind>) -> Result<Option<impl AsyncRead>> {
+        let path = self.path_of(kind);
 
         info!("Reading fragment {:?}", path);
         let file = OpenOptions::new()
@@ -150,7 +149,7 @@ impl<State: BundleState> Bundle<'_, State> {
 
         match file {
             Ok(file) => {
-                return Ok(Some(f(file, kind).await?));
+                return Ok(Some(file));
             }
 
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
@@ -163,21 +162,21 @@ impl<State: BundleState> Bundle<'_, State> {
         }
     }
 
-    pub async fn plaintext(&self) -> Result<String> {
-        return self.with_fragment(Kind::Plaintext, |mut file, _| async move {
-            let mut buffer = String::new();
-            file.read_to_string(&mut buffer).await?;
+    pub async fn read_plaintext(&self) -> Result<String> {
+        let mut file = self.read(Kind::Plaintext).await?
+            .ok_or_else(|| anyhow!("Plaintext missing in bundle: {}", self.id))?;
 
-            Ok(buffer)
-        }).await
-            .and_then(|plaintext| plaintext.ok_or_else(|| anyhow!("Plaintext missing in bundle: {}", self.id)));
+        let mut buffer = String::new();
+        file.read_to_string(&mut buffer).await?;
+
+        return Ok(buffer);
     }
 
-    pub async fn metadata(&self) -> Result<Metadata> {
-        return self.with_fragment(Kind::Metadata, |file, _| async move {
-            Metadata::load(file).await
-        }).await
-            .and_then(|metadata| metadata.ok_or_else(|| anyhow!("Metadata missing in bundle: {}", self.id)));
+    pub async fn read_metadata(&self) -> Result<Metadata> {
+        let file = self.read(Kind::Metadata).await?
+            .ok_or_else(|| anyhow!("Metadata missing in bundle: {}", self.id))?;
+
+        return Metadata::load(file).await;
     }
 }
 

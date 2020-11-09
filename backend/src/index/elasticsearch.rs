@@ -84,8 +84,8 @@ impl super::Index for Index {
     async fn index<'r>(&self, bundle: &Bundle<'r, Archived>) -> Result<()> {
         let id = bundle.id().to_string();
 
-        let text = bundle.plaintext().await?;
-        let meta = bundle.metadata().await?;
+        let text = bundle.read_plaintext().await?;
+        let meta = bundle.read_metadata().await?;
 
         self.client
             .index(IndexParts::IndexTypeId(&self.index, DOCUMENT_TYPE, &id))

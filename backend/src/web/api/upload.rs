@@ -47,7 +47,7 @@ pub(super) async fn upload_pdf(data: Data,
         Ok(()) => {
             // Make a inboxed bundle from the staging
             let bundle = staging.create().await?;
-            let metadata = bundle.metadata().await?;
+            let metadata = bundle.read_metadata().await?;
 
             return Ok(Json(UploadResponse {
                 doc: DocInfo {

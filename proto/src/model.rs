@@ -69,7 +69,6 @@ pub enum Kind {
     Preview,
     Plaintext,
     Metadata,
-    ProcessLog,
     Other { name: OsString },
 }
 
@@ -85,7 +84,6 @@ impl<S: Into<String>> From<S> for Kind {
             "preview" => Kind::Preview,
             "plaintext" => Kind::Plaintext,
             "metadata" => Kind::Metadata,
-            "process_log" => Kind::ProcessLog,
             s => Kind::other(s),
         };
     }

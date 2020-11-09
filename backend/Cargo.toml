@@ -29,6 +29,7 @@ async-trait = "0.1"
 elasticsearch = "7.6.1-alpha.1"
 shiplift = { git = "https://github.com/softprops/shiplift.git", branch = "master" }
 tokio = { version = "0.2", features = [ "full" ] }
+tokio-util = { version = "0.3", features = [ "full" ] }
 futures = "0.3.5"
 bytes = "0.5"
 maplit = "1"
@@ -37,11 +38,11 @@ jsonwebtoken = "7.1"
 bincode = "1.2"
 hyperx = "1.1.0"
 log = "0.4.11"
+tar = "0.4.30"
 
 [dev-dependencies]
 tempfile = "3.1.0"
 mockall = "0.8.0"
 rand = "0.7.3"
 spectral = "0.6.0"
-tar = "0.4.30"
 env_logger = "0.7.1"
