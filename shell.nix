@@ -5,7 +5,7 @@ let
   pkgs = import <nixpkgs> {
     overlays = [ mozillaOverlay ];
   };
-  rustChannel = pkgs.rustChannelOf { date = "2020-09-03"; channel = "nightly"; };
+  rustChannel = pkgs.rustChannelOf { date = "2020-11-09"; channel = "nightly"; };
 
 in pkgs.mkShell {
   buildInputs = with pkgs; [

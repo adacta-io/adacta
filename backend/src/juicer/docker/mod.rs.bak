@@ -1,0 +1,143 @@
+use std::io::Cursor;
+
+use anyhow::Result;
+use async_trait::async_trait;
+use bytes::BytesMut;
+use futures::{StreamExt, TryStreamExt};
+use log::{debug, error, trace};
+
+use crate::config::DockerJuicer as Config;
+use crate::proto::model::Kind;
+use crate::repository::{Bundle, Staging};
+use std::env;
+use rocket::http::uri::Uri;
+
+#[cfg(test)]
+mod test;
+
+/// Connect to docker instance respecting DOCKER_* variables.
+pub(self) fn docker_connect() -> Result<bollard::Docker> {
+    return Ok(
+        if let Some(host) = env::var("DOCKER_HOST") {
+            let host: Uri = host.parse()
+                .with_context(|| format!("Invalid host URL: {}", host))?;
+            
+            if env::var("DOCKER_TLS_VERIFY").is_ok() {
+                bollard::Docker::connect_with_ssl_defaults()?
+            } else {
+                bollard::Docker::connect_with_http_defaults()?
+            }
+        } else {
+            bollard::Docker::connect_with_local_defaults()?
+        }
+    );
+}
+
+pub struct Juicer {
+    docker: bollard::Docker,
+
+    image: String,
+}
+
+impl Juicer {
+    const DOCKER_IMAGE: &'static str = "adacta10/juicer:develop";
+
+    pub async fn from_config(config: Config) -> Result<Self> {
+        let docker = docker_connect()?;
+        // docker.ping().await?; // TODO: Implement?
+
+        let image = config.image
+            .unwrap_or_else(|| Self::DOCKER_IMAGE.to_string());
+
+        Ok(Self { docker, image })
+    }
+}
+
+#[async_trait]
+impl super::Juicer for Juicer {
+    async fn extract<'r>(&self, bundle: &Bundle<'r, Staging>) -> Result<()> {
+        // TODO fooker: add error context
+
+        debug!("Creating container");
+        let container_id = self.docker.create_container(Some(bollard::container::CreateContainerOptions {
+            name: &format!("adacta-juicer-{}", bundle.id()),
+        }), bollard::container::Config {
+            attach_stdout: Some(true),
+            attach_stderr: Some(true),
+            env: Some(vec![format!("DOC_ID={}", bundle.id())]),
+            image: Some(self.image.clone()),
+            ..Default::default()
+        }).await?.id;
+
+        // Build tar archive from source bundle data
+        let input = {
+            let mut archive = tar::Builder::new(Vec::new());
+            archive.append_path_with_name(bundle.path_of(Kind::Metadata), "metadata.json")?;
+            archive.append_path_with_name(bundle.path_of(Kind::other("original.pdf")), "original.pdf")?;
+            archive.into_inner()?
+        };  // TODO fooker: directly stream to TAR creator
+
+        // Upload source bundle to container
+        debug!("Uploading bundle to container (id={})", container_id);
+        self.docker.upload_to_container(&container_id, Some(bollard::container::UploadToContainerOptions {
+            path: "/juicer",
+            ..Default::default()
+        }), input.into()).await?;
+
+        debug!("Starting container (id={})", container_id);
+        self.docker.start_container(&container_id, Some(bollard::container::StartContainerOptions::<String>::default())).await?;
+
+        // Read logs from container and forward to logging
+        let logs = self.docker.logs(&container_id, Some(bollard::container::LogsOptions {
+            follow: true,
+            stdout: true,
+            stderr: true,
+            timestamps: false,
+            tail: "all",
+            ..Default::default()
+        }));
+        logs.try_for_each(|line| async move {
+            trace!("{:?}", line);
+            return Ok(());
+        }).await?;
+
+        debug!("Waiting for container to finish (id={})", container_id);
+        let result = self.docker.wait_container(&container_id, Some(bollard::container::WaitContainerOptions::<String>::default()))
+            .fuse().select_next_some().await?; // TODO fooker: is this the way to do this?
+
+        debug!("Downloading bundle from container (id={})", container_id);
+        let output = self.docker.download_from_container(&container_id, Some(bollard::container::DownloadFromContainerOptions {
+            path: "/juicer",
+        })).try_fold(BytesMut::with_capacity(8192), |mut acc, b| async {
+            acc.extend(b);
+            return Ok(acc);
+        }).await?; // TODO fooker: directly stream to TAR extractor
+
+        // Extract the received tar archive into the bundle folder
+        let mut tar = tar::Archive::new(Cursor::new(output));
+        for entry in tar.entries()? {
+            let mut entry = entry?;
+
+            let path = entry.path()?;
+            let path = path.strip_prefix("juicer/")?;
+            let path = bundle.path().join(path);
+
+            entry.unpack(path)?;
+        }
+
+        debug!("Deleting container (id={})", container_id);
+        self.docker.remove_container(&container_id, Some(bollard::container::RemoveContainerOptions {
+            v: true,
+            force: true,
+            ..Default::default()
+        })).await?;
+
+        // Fail with error depending on status-code
+        if result.status_code != 0 {
+            error!("Container failed (id={}): {}", container_id, result.status_code);
+            anyhow::bail!("Juicing failed (id={}): {}", container_id, result.status_code);
+        }
+
+        return Ok(());
+    }
+}

@@ -49,7 +49,7 @@ impl Server {
             Box::new(self.suggester),
         ).unwrap();
 
-        return rocket::local::asynchronous::Client::new(rocket).await.unwrap();
+        return rocket::local::asynchronous::Client::untracked(rocket).await.unwrap();
     }
 }
 

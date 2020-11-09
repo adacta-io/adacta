@@ -63,6 +63,8 @@ commands:
       - run:
           name: "Test"
           command: |
+            env
+            export RUST_BACKTRACE=full
             cargo test --release --all --all-targets
 
 

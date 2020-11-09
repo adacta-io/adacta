@@ -2021,7 +2021,7 @@ checksum = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
 [[package]]
 name = "shiplift"
 version = "0.6.0"
-source = "git+https://github.com/softprops/shiplift.git?branch=master#49afd94f8d084ac028920c1785b2ddb05c13bef3"
+source = "git+https://github.com/adacta-io/shiplift.git?branch=master#7a7810b9979fd31701de73ce0b0856e5d9719e99"
 dependencies = [
  "base64 0.11.0",
  "byteorder",

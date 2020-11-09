@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 use log::{debug, error, trace};
 use shiplift::{ContainerOptions, Docker, LogsOptions};
 use tokio::io::AsyncWriteExt;
@@ -8,6 +8,8 @@ use tokio::io::AsyncWriteExt;
 use crate::config::DockerJuicer as Config;
 use crate::proto::model::Kind;
 use crate::repository::{Bundle, Staging};
+use std::path::Path;
+use std::io::Cursor;
 
 #[cfg(test)]
 mod test;
@@ -45,25 +47,32 @@ impl super::Juicer for Juicer {
         let create = ContainerOptions::builder(&self.image)
             .name(&format!("juicer-{}", bundle.id()))
             .network_mode("none")
-            .volumes(vec![
-                &format!("{}:/juicer", bundle.path().display())
-            ])
             .build();
         let container = containers.create(&create).await
             .with_context(|| format!("Error creating container (image={})", self.image))?;
         let container = containers.get(&container.id);
+
+        debug!("Uploading bundle to container (id={})", container.id());
+        let upload: Result<_> = try {
+            let mut archive = tar::Builder::new(Vec::new());
+            archive.append_path_with_name(bundle.path_of(Kind::Metadata), "metadata.json")?;
+            archive.append_path_with_name(bundle.path_of(Kind::other("original.pdf")), "original.pdf")?;
+            archive.into_inner()?
+        };
+        let upload = upload.context("Error creating upload archive")?;
+        container.copy_to(Path::new("/juicer/"), upload.into()).await?;
 
         debug!("Starting container (id={})", container.id());
         container.start().await
             .with_context(|| format!("Error starting container (id={})", container.id()))?;
 
         // Read the output from container and write to log file
-        let mut output = container.logs(&LogsOptions::builder()
+        let mut logs = container.logs(&LogsOptions::builder()
             .follow(true)
             .stdout(true)
             .stderr(true)
             .build());
-        while let Some(chunk) = output.next().await {
+        while let Some(chunk) = logs.next().await {
             let chunk = chunk.with_context(|| format!("Error running container (id={})", container.id()))?;
 
             trace!("{}: {}", container.id(), String::from_utf8_lossy(&chunk));
@@ -75,6 +84,23 @@ impl super::Juicer for Juicer {
         debug!("Waiting for container to finish (id={})", container.id());
         let result = container.wait().await
             .with_context(|| format!("Error waiting for container (id={})", container.id()))?;
+
+        debug!("Downloading bundle to container (id={})", container.id());
+        let download = container.copy_from(Path::new("/juicer/"))
+            .try_concat().await?;
+
+        // Extract the received tar archive into the bundle folder
+        // TODO fooker: add context for error handling
+        let mut tar = tar::Archive::new(Cursor::new(download));
+        for entry in tar.entries()? {
+            let mut entry = entry?;
+
+            let path = entry.path()?;
+            let path = path.strip_prefix("juicer/")?;
+            let path = bundle.path().join(path);
+
+            entry.unpack(path)?;
+        }
 
         debug!("Deleting container (id={})", container.id());
         container.delete().await

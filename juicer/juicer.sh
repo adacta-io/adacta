@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-bash --version
-
 set -xe
 
+# Sanity checks
 if [[ ! -r "original.pdf" ]]; then
     echo "Missing original.pdf" >&2
     exit 1
@@ -14,9 +13,11 @@ pdftotext "original.pdf" "original.txt"
 
 # Decide whether to enhance or not
 if [[ "$(wc -c < "original.txt")" -lt 10 ]]; then
+  echo "Document contains no text - enhancing" >&2
   "$(dirname "$0")/enhance.sh"
 else
   # Just copy original PDF and already extracted text
+  echo "Document already contains text" >&2
   cp 'original.pdf' 'document.pdf'
   cp 'original.txt' 'document.txt'
 fi

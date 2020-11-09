@@ -1,11 +1,11 @@
 use rust_embed::RustEmbed;
+use shiplift::BuildOptions;
 use tokio::io::AsyncWriteExt;
 
 use crate::meta::Metadata;
 use crate::repository::Repository;
 
 use super::*;
-use shiplift::BuildOptions;
 
 mod extract;
 

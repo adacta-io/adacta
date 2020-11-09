@@ -1,4 +1,5 @@
 #![feature(bool_to_option)]
+#![feature(try_blocks)]
 
 pub use adacta_proto as proto;
 use anyhow::Result;

@@ -22,7 +22,7 @@ async fn test_extract_pages() {
 
     juicer.extract(&bundle).await.unwrap();
 
-    assert_that!(bundle.metadata().await.unwrap().pages).is_equal_to(1);
+    assert_that!(bundle.read_metadata().await.unwrap().pages).is_equal_to(1);
 }
 
 #[tokio::test]
@@ -39,7 +39,7 @@ async fn test_extract_with_title() {
 
     juicer.extract(&bundle).await.unwrap();
 
-    assert_that!(bundle.metadata().await.unwrap().title).is_equal_to(Some(String::from("Having a title")));
+    assert_that!(bundle.read_metadata().await.unwrap().title).is_equal_to(Some(String::from("Having a title")));
 }
 
 #[tokio::test]
@@ -57,7 +57,7 @@ async fn test_extract_without_title() {
 
     juicer.extract(&bundle).await.unwrap();
 
-    assert_that!(bundle.metadata().await.unwrap().title).is_equal_to(Some(String::from("Some existing title")));
+    assert_that!(bundle.read_metadata().await.unwrap().title).is_equal_to(Some(String::from("Some existing title")));
 }
 
 #[tokio::test]
@@ -75,5 +75,5 @@ async fn test_extract_with_title_conflicting() {
 
     juicer.extract(&bundle).await.unwrap();
 
-    assert_that!(bundle.metadata().await.unwrap().title).is_equal_to(Some(String::from("Some existing title")));
+    assert_that!(bundle.read_metadata().await.unwrap().title).is_equal_to(Some(String::from("Some existing title")));
 }
