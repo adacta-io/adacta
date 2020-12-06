@@ -18,6 +18,8 @@ Adacta concentrates on the following features:
   The whole OCR process is running in a docker container avoiding installing a complex and hard to maintain OCR software stack.
 * Documents can be tagged.
   The tagging is aided by machine learning to suggest tags based on the documents text.
+* Ergonomic Web Interface to review and browse documents.
+* CLI to interact with documents from the comand line
 
 In contrast, Adacta declares the following non-features:
 * No multi-user or mandate support and no ACL system.
